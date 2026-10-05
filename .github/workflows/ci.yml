@@ -1,0 +1,47 @@
+name: Controlli
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: controlli-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  controlli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Tipi
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Standard degli esercizi
+        run: npm run standard
+      - name: Motore, standard, giro completo
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Browser per le prove col dito
+        run: npx playwright install --with-deps chromium
+      - name: Prove col dito su telefono
+        run: npm run test:e2e
+      - name: Versione in un file solo
+        run: npm run build:artifact
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapporti
+          path: |
+            playwright-report/
+            test-results/
+            dist/fase-neutro-terra.html
+          if-no-files-found: ignore

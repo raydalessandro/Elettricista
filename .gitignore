@@ -1,0 +1,21 @@
+# dipendenze
+node_modules/
+
+# build
+.next/
+out/
+dist/
+next-env.d.ts
+*.tsbuildinfo
+
+# test
+test-results/
+playwright-report/
+blob-report/
+playtest/
+
+# ambiente
+.env*
+!.env.example
+.vercel/
+.DS_Store
