@@ -1,9 +1,10 @@
 /* Controllo automatico dello standard degli esercizi (docs/STANDARD.md).
-   Ogni regola ha un codice: S1…S17. Errori = il livello non si pubblica; avvisi = da guardare. */
+   Ogni regola ha un codice: S1…S18. Errori = il livello non si pubblica; avvisi = da guardare. */
 
 import { collaudo, evaluate, switchesOf, termIds } from "../core/engine";
 import { RULES } from "../core/rules";
-import { checkFaults } from "../core/faults";
+import { applyFault, checkFaults } from "../core/faults";
+import { drawIssues } from "../core/geometry";
 import type { Card, Comp, FiliLevel, GuastoLevel, Level } from "../core/types";
 
 export interface Finding {
@@ -52,9 +53,15 @@ export function validate(levels: Level[], cards: Record<string, Card>): Finding[
     const need = new Set<string>(lv.requires || []);
 
     if (lv.type === "fili" || lv.type === "guasto") boardChecks(lv, add);
-    if (lv.type === "fili") filiChecks(lv, add, need);
+    if (lv.type === "fili") {
+      filiChecks(lv, add, need);
+      // i fili li tira il giocatore: il disegno della soluzione è solo un avviso
+      drawChecks(lv, [RULES.toWires(lv, lv.solution)], add, "avviso");
+    }
     if (lv.type === "guasto") {
       for (const f of checkFaults(lv)) add(lv, f.code, f.msg, f.sev);
+      // sul banco guardare è già una prova: il disegno dell'impianto, sano e con ogni guasto, deve essere chiaro
+      drawChecks(lv, [applyFault(lv, null).visible, ...lv.faults.map(f => applyFault(lv, f).visible)], add, "errore");
       need.add("tester-misure");
       need.add("metodo-guasti");
       for (const f of lv.faults) (f.requires || []).forEach(t => need.add(t));
@@ -143,6 +150,22 @@ function boardChecks(lv: FiliLevel | GuastoLevel, add: Add) {
     for (let j = i + 1; j < pts.length; j++) {
       const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
       if (d < 28) add(lv, "S9", `${pts[i].id} e ${pts[j].id} sono troppo vicini (${d.toFixed(0)}): col dito si sbaglia`);
+    }
+}
+
+/** S18 · disegno chiaro: nessun filo passa sopra un morsetto non suo, sopra un pezzo o sopra le scritte dei morsetti */
+function drawChecks(lv: FiliLevel | GuastoLevel, sets: { a: string; b: string; capo: boolean; color: string }[][], add: Add, sev: Finding["sev"]) {
+  const said = new Set<string>();
+  const say = (msg: string, s: Finding["sev"]) => {
+    if (said.has(msg)) return;
+    said.add(msg);
+    add(lv, "S18", msg, s);
+  };
+  for (const ws of sets)
+    for (const is of drawIssues(lv, ws)) {
+      if (is.terms.length) say(`il filo ${is.a} → ${is.b} passa sopra ${is.terms.join(", ")}: non si capisce dove arriva`, sev);
+      if (is.bodies.length) say(`il filo ${is.a} → ${is.b} attraversa ${is.bodies.join(", ")}`, sev);
+      if (is.labels.length) say(`il filo ${is.a} → ${is.b} copre la scritta di ${is.labels.join(", ")}`, "avviso");
     }
 }
 

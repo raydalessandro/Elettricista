@@ -1,8 +1,8 @@
 # Standard degli esercizi sugli impianti
 
-Versione 1 · 4 ottobre 2026 · gioco «Fase Neutro Terra»
+Versione 1.2 · 5 ottobre 2026 · gioco «Fase Neutro Terra»
 
-Questo standard dice come si progetta un esercizio di cablaggio perché il giocatore possa sempre arrivare alla soluzione giusta ragionando su quello che vede. Vale per i nove interventi di oggi e per gli impianti completi di domani. Lo usano Ray, chi scrive i livelli e gli agenti che costruiscono il gioco.
+Questo standard dice come si progetta un esercizio sugli impianti perché il giocatore possa sempre arrivare alla risposta giusta ragionando su quello che vede e misura. Vale per gli esercizi di cablaggio (capitolo 1), per il banco guasti (capitolo 2) e per gli impianti completi di domani. Lo usano Ray, chi scrive i livelli e gli agenti che costruiscono il gioco.
 
 - **Gioco:** https://claude.ai/artifact/G3B1DVWiLSYvHjvYYo2onC
 - **Codice e controlli:** repository `raydalessandro/Elettricista` (Next.js + TypeScript, pubblicato su Vercel). Motore in `src/core/`, contenuti in `src/content/`, controllo in `src/standard/`, test in `tests/`.
@@ -55,6 +55,10 @@ I codici sono gli stessi che stampa il controllo automatico (`npm run standard`,
 | S12 | **Storia fisica coerente** | Un filo con un capo libero non «prosegue» da un'altra parte. Se la chiamata nomina un pezzo che c'era (il vecchio interruttore), la tavola lo mostra oppure la nota dice che è stato tolto. Al negozio si va prima di staccare la corrente. |
 | S13 | **Missioni raggiungibili** | Ogni missione si completa dalla situazione iniziale con le azioni scritte nella missione. I tempi del gioco (contatore 4 s, ciabatta 2 s) stanno nei dati, e li usano sia il gioco sia il controllo. |
 | S14 | **Indagini risolvibili col metodo** | Senza il colpevole il differenziale regge. Il colpevole da solo lo fa scattare. |
+| S15 | **Banco: impianto e guasti veri** | L'impianto sano si collega con le regole del gioco e passa il collaudo. Ogni guasto si applica davvero (i collegamenti che nomina esistono) e fa il sintomo che dichiara. Almeno due risposte per livello. «Nessun difetto» (`none`) non cambia niente, ed è una sola. |
+| S16 | **Banco: ogni guasto si distingue** | Ogni risposta si distingue dalle altre e dall'impianto sano con le misure, in qualche posizione dei comandi (tranne «nessun difetto», che è l'impianto sano). Senza tester si vede solo la lampada: colori e morsetti non contano. Avviso se `minMeasures` è sotto il minimo calcolato. |
+| S17 | **Banco: risposte scritte bene** | Diagnosi tutte diverse. Ogni guasto dice dove sta (`where`, tranne «nessun difetto»), cosa racconta il cliente (`msg`) e un modo per dimostrarlo (`proof`). |
+| S18 | **Disegno chiaro** | Nessun filo passa sopra un morsetto non suo o attraversa un pezzo; le scritte dei morsetti restano libere (avviso). Sul banco è un errore, perché guardare è il primo passo della ricerca: si controllano l'impianto sano e il disegno di ogni guasto. Nei livelli di cablaggio è un avviso sulla soluzione, perché i fili li tira il giocatore. |
 
 Regole che il controllo non può verificare, ma che valgono lo stesso:
 - **Domande del controllo.** Si scrivono come regole («Si spella solo il rame che entra nel morsetto»), non come dichiarazioni di cose che il gioco non fa fare («Ho tagliato il rame»).
@@ -81,6 +85,7 @@ Regole che il controllo non può verificare, ma che valgono lo stesso:
 | sicurezza al quadro | procedura (tester, stacca, segnala, misura) |
 | trappola delle etichette | il quadro può sbagliare |
 | la serata (non ha tavola) | contatore |
+| un banco guasti | il tester (tensione e continuità) e il metodo di ricerca guasti, più i concetti dei guasti (`requires` di ogni guasto) |
 
 ## Formato dei dati di un esercizio
 
@@ -98,6 +103,18 @@ Regole che il controllo non può verificare, ma che valgono lo stesso:
 | `safety` | Spina o quadro (`type`), leve del quadro (`breakers`), linea da staccare (`feed`), misure (`probes`, conduttori L, R, N, PE), dove si misura (`where`), interruttore a muro (`wall`). |
 | `trap` | Trappola del livello, per esempio `"etichette"`: il quadro ha una scritta sbagliata. |
 | `note`, `hints`, `check` | Nota sopra la tavola, suggerimenti, domande del controllo. |
+| `cap` | Capitolo del livello. I numeri `n` continuano da un capitolo all'altro. |
+
+Un pezzo può avere anche `flip` (comando montato capovolto: morsetti sopra il corpo, i fili arrivano dall'alto), `name` e `short` (come si chiama nei testi e sul tester, per esempio «deviatore della porta» e «dev. porta»).
+
+Un livello del banco guasti (`type: "guasto"`) ha:
+
+| Campo | Cosa contiene |
+|---|---|
+| `board`, `goal` | La tavola e cosa deve fare l'impianto, di solito quelli di un intervento del capitolo 1. |
+| `wiring` | I collegamenti dell'impianto sano. |
+| `line` | La leva del quadro che alimenta il banco («Luci C10»). |
+| `faults[]` | Le risposte possibili: `id`, `label` (la diagnosi), `where`, `msg` (la chiamata), `symptom` (spenta, parziale, sempre accesa, funziona, presa morta, salta), il guasto (`open`: collegamenti che non fanno contatto, anche quelli già posati; `broken`: pezzi rotti; `rewire`: collegamenti fatti male e visibili), `requires`, `proof`, `minMeasures`. `none: true` è la risposta «nessun difetto». |
 
 ## Controlli automatici
 
@@ -112,7 +129,10 @@ Le regole di collegamento stanno in un modulo solo (`src/core/rules.ts`). Lo usa
 | `tests/e2e/touch.spec.ts` | Il dito vero su un telefono 390×844: trascinare, agganciare, toccare due punti, spostare un capo, cambiare colore, scorrere la pagina. |
 | `tests/e2e/lampadario.spec.ts` | Il caso del lampadario giocato col dito. |
 | `tests/e2e/serata.spec.ts` | Le missioni della serata dalla situazione iniziale, con il contatore sempre in vista. |
-| `npm run packets` | Prepara i pacchetti per la prova alla cieca. |
+| `tests/unit/banco.test.ts` | Banco guasti: prese vuote, la prova delle misure, il disegno dei fili. |
+| `tests/e2e/banco.spec.ts` | Un guasto trovato col dito: prova del tester, leva, comando, puntali, continuità, diagnosi, riparazione fuori tensione. |
+| `npm run packets` | Prepara i pacchetti per la prova alla cieca: testi, schermate (pagina intera e telefono mentre misuri), quaderno delle schede, aiuti a parte. |
+| `npx tsx scripts/banco.ts <livello> <caso>` | Il banco guasti da riga di comando, per i revisori: le stesse misure del gioco, col guasto nascosto. I casi 1…n sono n guasti diversi. |
 
 Tutto gira a ogni push nell'integrazione continua (GitHub Actions). Un livello si pubblica solo con zero errori. Gli avvisi si guardano uno per uno.
 
@@ -133,6 +153,23 @@ Nel rapporto scrive:
 6. i problemi di lettura.
 
 Ogni assunzione su qualcosa che non è sullo schermo è un difetto da correggere. I collegamenti proposti si fanno passare dal motore: se un ragionamento sensato porta a un collaudo fallito, il livello va rivisto.
+
+Per il banco guasti il revisore gioca con `scripts/banco.ts`, almeno quattro casi per livello, e prova apposta una diagnosi data troppo presto e un caso senza provare il tester. Nel rapporto aggiunge le misure di ogni caso e cosa ha risposto il banco. La cartella del pacchetto non contiene la pagina del gioco, che ha dentro le soluzioni.
+
+## Banco guasti
+
+L'impianto è già collegato e c'è un guasto. Il giocatore accende e spegne la linea, gira i comandi, appoggia i puntali, poi sceglie la diagnosi tra le risposte del livello e ripara fuori tensione.
+
+- **Il tester** (`src/core/faults.ts`). In tensione, a linea accesa, legge 230 V o 0 V tra due punti. Attraverso una lampada intera il potenziale passa, senza corrente: per questo un neutro interrotto dietro una lampada accesa «punge». Un punto staccato da tutto legge 0 V; la scheda avvisa che un tester digitale vero lì può segnare una tensione fantasma, e che si usa la funzione LoZ. In continuità, a linea spenta, legge «suona» (collegamento diretto), 38 Ω (attraverso una lampadina a filamento) o OL. Sul banco le prese sono vuote: per misurare si stacca quello che c'è attaccato.
+- **La prova.** Una diagnosi giusta è **dimostrata** quando:
+  - nessun'altra risposta del livello si accorda con quello che il giocatore sa: la chiamata, la luce nelle posizioni che ha visto a linea accesa e le misure che ha fatto. Colori e morsetti guidano, ma non provano: i colori possono mentire;
+  - almeno una misura conta, perché legge qualcosa di diverso dall'impianto sano o esclude una risposta che chiamata e luce lasciavano aperta («nessun difetto» non ha un difetto da mostrare);
+  - il tester è stato provato su una presa viva («Prova il tester»).
+
+  Una diagnosi giusta ma non dimostrata dice cosa manca. Una diagnosi sbagliata dice cosa la smentisce: la misura, la chiamata, i fili o la luce.
+- **Le stelle.** Sicurezza: niente continuità a linea accesa e niente mani sui fili in tensione. Metodo: diagnosi dimostrata, con non più di `minMeasures` + 3 misure (la prova del tester non conta). Diagnosi: giusta al primo colpo.
+- **«Nessun difetto».** Dove il sintomo è «funziona» (la verifica di un impianto) c'è anche la risposta «nessun difetto»: così la diagnosi non si indovina per esclusione.
+- **Il disegno.** I fili si disegnano con `src/core/geometry.ts`: tra le curve possibili si sceglie la più semplice che non copre morsetti, scritte e pezzi altrui e non corre sopra altri fili. Lo stesso modulo fa il controllo S18.
 
 ## Verso gli impianti completi
 
@@ -192,3 +229,14 @@ Regola sulle licenze: si copia codice solo da progetti con licenza permissiva (M
     - ordine della procedura: prima si prova il tester.
   - Dopo le correzioni il controllo dà 0 errori su 9 livelli. Gli aiuti ora stanno in un file a parte: nelle prime due prove erano in fondo al pacchetto, e alcuni revisori li avevano visti.
 - **v1.1 · 5 ottobre 2026.** Licenza di PhET precisata. Aggiunti i riferimenti esterni e la regola sulle licenze.
+- **v1.2 · 5 ottobre 2026.** Capitolo 2, banco guasti: regole S15–S18, formato dei guasti, la prova delle misure, il banco da riga di comando per i revisori.
+  - Prima prova alla cieca, 3 revisori su 6 livelli: tutte le diagnosi giuste, tranne tre errori dovuti al banco a riga di comando, che non ripeteva l'opzione scelta. Correzioni:
+    - il tester non copre più la tavola;
+    - nei disegni i fili non passano sopra morsetti altrui (S18);
+    - il deviatore capovolto nella camera;
+    - nomi dei comandi per posto («deviatore della porta»);
+    - le prese del banco sono vuote;
+    - la verifica della cantina ha la risposta «nessun difetto»;
+    - schede riscritte dove dicevano più di quello che le misure mostrano.
+  - Seconda prova, 3 revisori: il banco dava per dimostrate diagnosi fatte senza misure. Da qui la regola della prova, il pulsante «Prova il tester» e un guasto in più nella presa morta (la fase della linea).
+  - Terza prova, 2 revisori: la lampadina non risultava mai dimostrata seguendo la scheda, e «nessun difetto» bastava guardare i colori. Corretti: la regola della prova, le schede del metodo, i testi «Un modo per dimostrarlo».

@@ -42,6 +42,12 @@ export interface Comp {
   /* pezzo già collegato, che il giocatore non tocca */
   locked?: boolean;
   lockedMsg?: string;
+  /** comando montato capovolto: i morsetti stanno sopra il corpo e i fili arrivano dall'alto */
+  flip?: boolean;
+  /** come si chiama nei testi («deviatore della porta»); se manca, dal tipo */
+  name?: string;
+  /** nome corto, per il tester e il registro («dev. porta») */
+  short?: string;
 }
 
 export interface Zone {
@@ -289,6 +295,11 @@ export interface Fault {
   proof: string;
   /** quante misure bastano a chi segue il metodo */
   minMeasures: number;
+  /**
+   * La risposta «nessun difetto»: l'impianto è sano. Serve dove il sintomo è «funziona»,
+   * perché la diagnosi non si possa indovinare per esclusione. Non cambia niente (niente open, broken, rewire).
+   */
+  none?: boolean;
 }
 
 export interface GuastoLevel extends LevelBase {

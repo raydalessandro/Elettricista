@@ -340,7 +340,7 @@ export const CAP1: Level[] = [
   {
     id: "i7", n: 7, cap: 1, part: "I comandi", type: "fili",
     title: "La camera", short: "Luce da tre punti: l'invertitore",
-    note: "Neutro e terra vanno già dalla scatola alla plafoniera: li ha collegati il collega. Tu pensi alla fase, ai deviatori e all'invertitore.",
+    note: "Neutro e terra vanno già dalla scatola alla plafoniera: li ha collegati il collega. Tu pensi alla fase, ai deviatori e all'invertitore. Il secondo deviatore è montato capovolto: i suoi morsetti stanno in alto.",
     client: { who: "Luca e Sara", where: "camera da letto", msg: "In camera vorremmo accendere la luce dalla porta e da tutti e due i comodini. Si può?" },
     learn: ["L'invertitore e la luce da tre punti", "Quando conviene il relè passo-passo"],
     cards: ["invertitore", "rele"],
@@ -362,13 +362,14 @@ export const CAP1: Level[] = [
         { id: "W1", kind: "morsetto", slots: 2, x: 180, y: 64, zone: "box" },
         { id: "D1", kind: "deviatore", x: 36, y: 162, zone: "z1" },
         { id: "INV", kind: "invertitore", x: 197, y: 162, zone: "zi" },
-        { id: "D2", kind: "deviatore", x: 36, y: 316, zone: "z2" },
-        { id: "LP", kind: "lampada", classe1: true, look: "plafoniera", top: true, x: 212, y: 330, zone: "soff" },
+        // capovolto, con i morsetti in alto: i fili dall'invertitore e il ritorno arrivano dall'alto, senza girargli attorno
+        { id: "D2", kind: "deviatore", x: 36, y: 380, zone: "z2", flip: true },
+        { id: "LP", kind: "lampada", classe1: true, look: "plafoniera", top: true, x: 230, y: 330, zone: "soff" },
       ],
       fixed: [
         { a: "S.L", b: "cM.x" },
-        { a: "S.N", b: "LP.N", vis: true, color: "blu", sec: 1.5, d: "M152,48 C152,104 172,96 172,146 V272 C172,282 182,286 196,286 H246 C258,286 262,302 262,342" },
-        { a: "S.PE", b: "LP.PE", vis: true, color: "gv", sec: 1.5, d: "M164,48 C164,100 176,92 176,140 V266 C176,276 186,279 198,279 H280 C292,279 296,302 296,342" },
+        { a: "S.N", b: "LP.N", vis: true, color: "blu", sec: 1.5, d: "M152,48 C152,104 172,96 172,146 V272 C172,282 182,286 196,286 H264 C276,286 280,302 280,342" },
+        { a: "S.PE", b: "LP.PE", vis: true, color: "gv", sec: 1.5, d: "M164,48 C164,100 176,92 176,140 V266 C176,276 186,279 198,279 H298 C310,279 314,302 314,342" },
       ],
     },
     palette: { sections: true, defSec: 1.5 },

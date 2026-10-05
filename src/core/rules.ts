@@ -50,18 +50,18 @@ function tpos(lv: RulesLevel, id: string): Point {
       return c.classe1 ? { x: x + pick({ L: 16, N: 50, PE: 84 }), y: ty } : { x: x + pick({ L: 25, N: 75 }), y: ty };
     }
     case "interruttore":
-      return { x: x + pick({ 1: 24, 2: 72 }), y: y + 72 };
+      return { x: x + pick({ 1: 24, 2: 72 }), y: c.flip ? y - 16 : y + 72 };
     case "deviatore":
-      return { x: x + pick({ C: 14, 1: 48, 2: 82 }), y: y + 72 };
+      return { x: x + pick({ C: 14, 1: 48, 2: 82 }), y: c.flip ? y - 16 : y + 72 };
     case "invertitore":
-      return { x: x + pick({ 1: 14, 2: 48, 3: 82, 4: 116 }), y: y + 72 };
+      return { x: x + pick({ 1: 14, 2: 48, 3: 82, 4: 116 }), y: c.flip ? y - 16 : y + 72 };
   }
   return { x: 0, y: 0 };
 }
-/* da che parte arriva un filo al morsetto: dal basso (1) o dall'alto (-1, morsettiera in cima alle lampade a soffitto) */
+/* da che parte arriva un filo al morsetto: dal basso (1) o dall'alto (-1: morsettiera in cima alle lampade a soffitto, comandi capovolti) */
 const tdir = (lv: RulesLevel, id: string) => {
   const c = compOf(lv, id);
-  return c.kind === "lampada" && c.top ? -1 : 1;
+  return (c.kind === "lampada" && c.top) || c.flip ? -1 : 1;
 };
 /* ingombro di un componente, per i controlli di impaginazione */
 function bbox(c: Comp): { x: number; y: number; w: number; h: number } | null {
@@ -76,9 +76,9 @@ function bbox(c: Comp): { x: number; y: number; w: number; h: number } | null {
       return c.top ? { x, y: y - 22, w: 100, h: 112 } : { x, y, w: 100, h: 106 };
     case "interruttore":
     case "deviatore":
-      return { x, y, w: 96, h: 92 };
+      return { x, y: c.flip ? y - 36 : y, w: 96, h: 92 };
     case "invertitore":
-      return { x, y, w: 140, h: 92 };
+      return { x, y: c.flip ? y - 36 : y, w: 140, h: 92 };
     case "capo":
       return { x: x - 6, y: y - 6, w: 12, h: 12 };
   }

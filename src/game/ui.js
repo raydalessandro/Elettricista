@@ -3,7 +3,9 @@
    mountGame(app) lo monta dentro un elemento: lo usano la pagina Next.js e la versione in un file solo. */
 import { CARDS, CHAPTERS, LEVELS, PRONTUARIO, WIRES } from "../content";
 import { collaudo, evaluate, termIds } from "../core/engine";
-import { applyFault, healthyWires, powerCheck, probePoints, readContinuity, readVoltage } from "../core/faults";
+import { routeAll, wgeom } from "../core/geometry";
+import { benchTermName, compName, descTerm, shortName, swState, termLabel as tLabel, termShort } from "../core/names";
+import { applyFault, checkProof, contradiction, healthyWires, powerCheck, probePoints, proofGaps, readContinuity, readVoltage, wrongText } from "../core/faults";
 import { RULES } from "../core/rules";
 
 export function mountGame(app) {
@@ -95,53 +97,9 @@ export function mountGame(app) {
   const tpos = RULES.tpos;
   /* da che parte arriva un filo al morsetto: dal basso (1) o dall'alto (-1) */
   const tdir = RULES.tdir;
-  function tLabel(c, t) {
-    if (c.tlabel && c.tlabel[t]) return c.tlabel[t];
-    if (c.kind === "presa") return t === "PE" ? "⏚" : "L/N";
-    if (c.kind === "lampada") return t === "PE" ? "⏚" : t;
-    return t;
-  }
-  function compName(c) {
-    if (c.kind === "lampada") return c.look || "lampada";
-    if (c.kind === "presa") return c.id === "PA" ? "presa esistente" : c.id === "PB" ? "presa nuova" : "presa bipasso";
-    if (c.kind === "deviatore") return c.id === "D1" ? "primo deviatore" : "secondo deviatore";
-    if (c.kind === "interruttore") return c.locked ? "interruttore a muro" : "interruttore";
-    if (c.kind === "invertitore") return "invertitore";
-    if (c.kind === "morsetto") return "morsetto a leva";
-    return c.kind;
-  }
-  function shortName(c) {
-    return ({ D1: "Dev. 1", D2: "Dev. 2", INV: "Inv.", I: "Interr.", WS: "Interr. a muro" })[c.id] || compName(c);
-  }
-  function swState(c, s) {
-    if (c.kind === "interruttore") return s ? "acceso" : "spento";
-    if (c.kind === "deviatore") return s ? "su 2" : "su 1";
-    return s ? "incrociato" : "dritto";
-  }
-  function descTerm(lv, id) {
-    const c = compOf(lv, id), t = id.split(".")[1];
-    if (c.kind === "capo") return `il filo ${WIRES[c.color].label}`;
-    if (c.kind === "morsetto") return `morsetto a leva, foro ${t.slice(1)}`;
-    return `${compName(c)}, morsetto ${tLabel(c, t)}`;
-  }
-
-  /* geometria di un filo: curva morbida, o a "S" per i fili che escono da un cavo */
-  function wgeom(x1, y1, x2, y2, H, stub, d1 = 1, d2 = 1) {
-    let c1, c2;
-    if (stub) { const my = (y1 + y2) / 2; c1 = { x: x1, y: my }; c2 = { x: x2, y: my }; }
-    else {
-      const d = Math.hypot(x2 - x1, y2 - y1), sag = Math.min(56, 14 + d * 0.22);
-      c1 = { x: x1, y: Math.max(6, Math.min(y1 + d1 * sag, H - 6)) }; c2 = { x: x2, y: Math.max(6, Math.min(y2 + d2 * sag, H - 6)) };
-    }
-    const f = v => v.toFixed(1);
-    return { d: `M${f(x1)},${f(y1)} C${f(c1.x)},${f(c1.y)} ${f(c2.x)},${f(c2.y)} ${f(x2)},${f(y2)}`, p1: { x: x1, y: y1 }, p2: { x: x2, y: y2 }, c1, c2 };
-  }
-  function wireGeom(lv, w, H) {
-    const p2 = tpos(lv, w.b);
-    if (w.capo) { const c = compOf(lv, w.a); return wgeom(c.fx, c.fy, p2.x, p2.y, H, true); }
-    const p1 = tpos(lv, w.a);
-    return wgeom(p1.x, p1.y, p2.x, p2.y, H, false, tdir(lv, w.a), tdir(lv, w.b));
-  }
+  /* geometria dei fili (src/core/geometry.ts): curve morbide che non coprono morsetti, scritte e pezzi altrui,
+     posate una alla volta perché non si corrano sopra */
+  const wireGeoms = (lv, wires) => routeAll(lv, wires.map(w => ({ a: w.a, b: w.b, capo: !!w.capo, color: w.color })));
   function wireSVG(g, color, sec, o) {
     const d = g.d;
     const w = sec >= 2.5 ? 5.2 : sec >= 1.5 ? 3.8 : 3;
@@ -214,17 +172,24 @@ export function mountGame(app) {
       const ln = (a, b, cls) => `<line class="${cls}" x1="${P[a][0]}" y1="${P[a][1]}" x2="${P[b][0]}" y2="${P[b][1]}"/>`;
       inner = [1, 2, 3, 4].map(k => `<path class="arm" d="M${P[k][0]},${P[k][1]} L${X(k)},${yb}"/><circle class="cpt" cx="${P[k][0]}" cy="${P[k][1]}" r="3"/>`).join("") +
         (s ? ln(1, 4, "contact") + ln(2, 3, "contact") : ln(1, 3, "contact") + ln(2, 4, "contact")) +
-        `<path class="pair" d="M${X(1)},${y + 86} v5 H${X(2)} v-5 M${X(3)},${y + 86} v5 H${X(4)} v-5"/>`;
+        `<path class="pair" d="M${X(1)},${y + 92} v5 H${X(2)} v-5 M${X(3)},${y + 92} v5 H${X(4)} v-5"/>`;
     }
     const stTxt = swState(c, s);
     const nm = c.locked ? "a muro" : c.kind;
     const act = pw ? ` data-act="toggleSw" data-arg="${c.id}" role="button" tabindex="0" aria-label="${esc(compName(c))}: ${stTxt}. Tocca per girarlo"`
       : c.locked && o.mode === "edit" ? ` data-locked="${c.id}" role="button" tabindex="0" aria-label="${esc(compName(c))}: già collegato. Tocca per sapere a cosa"` : "";
     const sx = x + w / 2;
-    return `<g class="swg"${act}><rect class="body" x="${x}" y="${y}" width="${w}" height="56" rx="8"/>${inner}
-      <text class="clab" x="${x + 6}" y="${y + 13}">${esc(nm)}</text>
-      ${pw ? `<text class="swst" x="${sx}" y="${y + 53}" text-anchor="middle">${stTxt}</text>` : ""}
-      ${c.locked ? `<text class="note" x="${x + w / 2}" y="${y + 74}" text-anchor="middle">già collegato</text>` : ""}</g>`;
+    /* capovolto: lo schema interno si specchia (morsetti in alto), le scritte vanno in basso e restano dritte */
+    const fl = !!c.flip;
+    const innerG = fl ? `<g transform="matrix(1 0 0 -1 0 ${2 * y + 56})">${inner}</g>` : inner;
+    /* la posizione si scrive dove lo schema interno lascia spazio: tra i due bracci a destra nel deviatore,
+       in alto a destra nell'invertitore, al centro nell'interruttore */
+    const st = !pw ? "" : c.kind === "invertitore" || fl ? `<text class="swst${c.kind === "invertitore" ? " r" : ""}" x="${x + w - 6}" y="${fl ? y + 51 : y + 13}" text-anchor="end">${stTxt}</text>`
+      : `<text class="swst" x="${c.kind === "deviatore" ? x + 65 : sx}" y="${y + 53}" text-anchor="middle">${stTxt}</text>`;
+    const lab = `<text class="clab" x="${x + 6}" y="${fl ? y + 51 : y + 13}">${esc(nm)}</text>${st}`;
+    return `<g class="swg"${act}><rect class="body" x="${x}" y="${y}" width="${w}" height="56" rx="8"/>${innerG}
+      ${lab}
+      ${c.locked ? `<text class="note" x="${x + w / 2}" y="${fl ? y - 34 : y + 74}" text-anchor="middle">già collegato</text>` : ""}</g>`;
   }
 
   function termSVG(lv, c, t, o, live) {
@@ -240,7 +205,8 @@ export function mountGame(app) {
     let lab = "";
     if (label) {
       if (c.kind === "presa") lab = `<text class="tl" x="${p.x}" y="${p.y - 12}" text-anchor="middle">${esc(label)}</text>`;
-      else if (c.kind === "lampada") lab = `<text class="tl" x="${p.x}" y="${c.top ? p.y - 17 : p.y + 25}" text-anchor="middle">${esc(label)}</text>`;
+      // sulle lampade la scritta sta a sinistra del morsetto: i fili arrivano dall'alto o dal basso e non la coprono
+      else if (c.kind === "lampada") lab = `<text class="tl" x="${p.x - 9}" y="${p.y + 4}" text-anchor="end">${esc(label)}</text>`;
       else lab = `<text class="tl" x="${p.x + 10}" y="${p.y + 4}">${esc(label)}</text>`;
     }
     const probe = pr < 0 ? "" : `<circle class="probe p${pr + 1}" cx="${p.x}" cy="${p.y}" r="12.5"/>`;
@@ -285,14 +251,15 @@ export function mountGame(app) {
     for (const t of b.tubes || []) out.push(`<g class="tube"><path class="tb" d="${t.d}"/><path class="tw" d="${t.d}" style="stroke:var(${WIRES[t.color].v})"/>${t.label ? `<text class="note" x="${t.lx}" y="${t.ly}">${esc(t.label)}</text>` : ""}</g>`);
     for (const k of b.cables || []) out.push(`<g class="sheath"><rect x="${k.x}" y="${k.y}" width="${k.w}" height="${k.h}" rx="${k.h / 2}"/><text x="${k.x + k.w / 2}" y="${k.y + k.h / 2 + 3.4}" text-anchor="middle">${esc(k.label)}</text></g>`);
     for (const c of comps) if (c.kind !== "capo") out.push(compSVG(lv, c, o, ev, trip));
+    const geoms = wireGeoms(lv, wires);
     wires.forEach((w, i) => {
       const label = `Filo ${WIRES[w.color].label}${w.capo ? "" : " " + fmt(w.sec) + " mm²"} da ${descTerm(lv, w.a)} a ${descTerm(lv, w.b)}. Tocca per cambiarlo`;
-      out.push(wireSVG(wireGeom(lv, w, H), w.color, w.sec, { idx: i, sel: o.selWire === i, edit, live: livePot(w.a), label, capo: w.capo ? w.a.split(".")[0] : null }));
+      out.push(wireSVG(geoms[i], w.color, w.sec, { idx: i, sel: o.selWire === i, edit, live: livePot(w.a), label, capo: w.capo ? w.a.split(".")[0] : null }));
     });
     for (const c of comps) if (!c.locked && c.kind !== "capo") for (const t of termIds(c)) out.push(termSVG(lv, c, t, o, livePot(c.id + "." + t)));
     for (const c of free) out.push(edit ? tipSVG(c, o) : `<g>${cuEnd(c, livePot(c.id + ".x"))}</g>`);
     if (edit && o.selWire != null && wires[o.selWire]) {
-      const w = wires[o.selWire], g = wireGeom(lv, w, H);
+      const w = wires[o.selWire], g = geoms[o.selWire];
       if (!w.capo) out.push(gripSVG(o.selWire, "a", g.p1, g.c1));
       out.push(gripSVG(o.selWire, "b", g.p2, g.c2));
     }
@@ -929,33 +896,10 @@ export function mountGame(app) {
     return fi;
   }
   function newBench(lv, fi) {
-    return { fi, on: false, tripped: null, mode: "V", probes: [], log: [], lastKey: null, measures: 0, unsafe: 0, diagOpen: false, diag: null, firstDiag: null, repaired: false, shock: false, tested: false, order: shuffle(lv.faults.map(f => f.id)) };
+    return { fi, on: false, tripped: null, mode: "V", probes: [], log: [], obs: [], seen: [], tester: false, lastKey: null, measures: 0, unsafe: 0, diagOpen: false, diag: null, firstDiag: null, proven: false, gaps: [], why: null, repaired: false, shock: false, tested: false, order: shuffle(lv.faults.map(f => f.id)) };
   }
   const curFault = () => lvCur().faults[S.run.bench.fi];
   const benchSetup = lv => applyFault(lv, S.run.bench.repaired ? null : lv.faults[S.run.bench.fi]);
-  /* i morsetti a leva si chiamano col colore del filo che ci entra: «il morsetto del blu» */
-  function wagoName(id, wires) {
-    const ws = wires.filter(w => w.a.split(".")[0] === id || w.b.split(".")[0] === id);
-    const w = ws.find(x => x.capo) || ws[0];
-    return w ? `morsetto del ${WIRES[w.color].label}` : "morsetto libero";
-  }
-  function benchTermName(lv, id, wires) {
-    const c = compOf(lv, id), t = id.split(".")[1];
-    if (c.kind === "morsetto") return `${wagoName(c.id, wires || [])}, foro ${t.slice(1)}`;
-    return descTerm(lv, id);
-  }
-  function termShort(lv, id, wires) {
-    const c = compOf(lv, id), t = id.split(".")[1];
-    switch (c.kind) {
-      case "morsetto": return wagoName(c.id, wires);
-      case "presa": return `${compName(c)} ${t === "PE" ? "⏚" : t === "A" ? "sinistro" : "destro"}`;
-      case "lampada": return `${compName(c)} ${t === "PE" ? "⏚" : t}`;
-      case "deviatore": return `${shortName(c)} ${t}`;
-      case "invertitore": return `inv. ${t}`;
-      case "interruttore": return `interr. ${t}`;
-    }
-    return id;
-  }
   function benchReading(lv) {
     const b = S.run.bench;
     if (b.probes.length < 2) return null;
@@ -964,14 +908,14 @@ export function mountGame(app) {
     if (b.on) return { unsafe: true };
     return { o: readContinuity(s, S.run.pst, p, q) };
   }
-  const OHM = { zero: ["0,0", "Ω · suona: è lo stesso filo"], carico: ["38", "Ω · c'è una lampada in mezzo"], aperto: ["OL", "aperto: non passa"] };
+  const OHM = { zero: ["0,0", "Ω · suona"], carico: ["38", "Ω · lampada in mezzo"], aperto: ["OL", "aperto: non passa"] };
   function readingText(rd) {
     if (rd.v != null) return `${rd.v} V`;
-    return { zero: "suona, 0 Ω", carico: "38 Ω, c'è una lampada in mezzo", aperto: "OL, aperto" }[rd.o];
+    return { zero: "suona, 0 Ω: collegati direttamente", carico: "38 Ω, c'è una lampada in mezzo", aperto: "OL, aperto" }[rd.o];
   }
-  function swText(lv) {
+  function swText(lv, st = S.run.pst) {
     const sw = lv.board.comps.filter(c => ["interruttore", "deviatore", "invertitore"].includes(c.kind));
-    return sw.length ? " · " + sw.map(c => `${shortName(c).toLowerCase()} ${swState(c, S.run.pst[c.id] || 0)}`).join(", ") : "";
+    return sw.length ? " · " + sw.map(c => `${shortName(c).toLowerCase()} ${swState(c, st[c.id] || 0)}`).join(", ") : "";
   }
   /* ogni coppia di puntali con un risultato nuovo è una misura, e finisce nel registro */
   function logMeasure(lv) {
@@ -984,14 +928,19 @@ export function mountGame(app) {
     if (rd.unsafe) { b.unsafe++; b.log.push({ t: "Continuità con la linea accesa: la misura non vale, e il tester rischia. Prima spegni la linea.", k: "bad" }); return; }
     const blind = b.mode === "V" && !b.on;
     if (!(b.diag && b.diag.ok) && !blind) b.measures++;
+    // le misure che contano per la prova: tensione a linea accesa, continuità a linea spenta, prima della riparazione
+    if (!blind && !b.repaired) b.obs.push({ mode: b.mode === "V" ? "V" : "Ω", a: b.probes[0], b: b.probes[1], st: Object.assign({}, S.run.pst) });
     b.log.push({ t: `${b.mode === "V" ? "V~" : "Ω"} · ${termShort(lv, b.probes[0], wires)} – ${termShort(lv, b.probes[1], wires)}${swText(lv)}${b.mode === "V" && !b.on ? " · linea spenta" : ""} → ${readingText(rd)}`, k: "" });
   }
+  /* la luce si vede solo a linea accesa: ogni posizione dei comandi vista accesa o spenta entra nella prova */
+  function seeLight(b) { const k = JSON.stringify(S.run.pst); if (!b.repaired && !b.seen.includes(k)) b.seen.push(k); }
   function benchPower(lv, on) {
     const b = S.run.bench;
     if (!on) { b.on = false; return; }
     const t = powerCheck(benchSetup(lv), S.run.pst);
     if (t) { b.on = false; b.tripped = t; b.log.push({ t: `Ridai tensione: scatta ${t === "corto" ? "il magnetotermico, c'è un corto" : "il differenziale"}.`, k: "bad" }); return; }
     b.on = true; b.tripped = null;
+    seeLight(b);
     if (b.repaired) b.tested = true;
   }
   const lineBreaker = lv => { const w = lv.line.split(" "); return { id: "line", label: w.slice(0, -1).join(" "), sub: w[w.length - 1] }; };
@@ -1006,15 +955,24 @@ export function mountGame(app) {
     let big = "– – –", small = b.mode === "V" ? "V~ · tensione" : "Ω · continuità";
     if (rd) {
       if (rd.unsafe) { big = "!"; small = "linea accesa: spegnila prima"; }
-      else if (rd.v != null) { big = String(rd.v); small = "V~" + (b.on ? "" : " · linea spenta"); }
+      else if (rd.v != null) { big = String(rd.v); small = "V~"; }
       else [big, small] = OHM[rd.o];
     }
     const p1 = b.probes[0] ? termShort(lv, b.probes[0], wires) : "tocca un morsetto";
     const p2 = b.probes[1] ? termShort(lv, b.probes[1], wires) : b.probes[0] ? "tocca il secondo" : "–";
-    return `<section id="sheet" class="sheet meter" aria-label="Tester">
-      <div class="mrow"><div class="lcd sm" aria-live="polite"><span>${esc(big)}</span><small>${esc(small)}</small></div>
+    return `<section id="sheet" class="sheet tester" aria-label="Tester">
+      <div class="mrow"><div class="mleft"><div class="lcd sm" aria-live="polite"><span>${esc(big)}</span><small>${esc(small)}</small></div><button class="btn-q tprova" data-act="testerProva" aria-pressed="${b.tester}">${b.tester ? "Tester provato" : "Prova il tester"}</button><button class="btn-q tlinea" data-act="lineTog" aria-pressed="${b.on}">${b.tripped ? "Linea scattata" : b.on ? "Linea accesa" : "Linea spenta"}</button></div>
       <div class="mcol"><div class="seg" role="group" aria-label="Cosa misura il tester"><button data-act="meterMode" data-arg="V" aria-pressed="${b.mode === "V"}">Tensione</button><button data-act="meterMode" data-arg="ohm" aria-pressed="${b.mode === "ohm"}">Continuità</button></div>
       <p class="plab"><span><i class="pdot p1"></i>${esc(p1)}</span><span><i class="pdot p2"></i>${esc(p2)}${b.probes.length ? ` <button class="btn-q" data-act="probesOff">Togli</button>` : ""}</span></p></div></div></section>`;
+  }
+  const hasNone = lv => lv.faults.some(f => f.none);
+  /* perché la diagnosi scelta non può essere: la prima cosa vista o misurata che la smentisce */
+  function wrongWhy(lv, b) {
+    const wires = benchSetup(lv).visible, pick = lv.faults.find(x => x.id === b.diag.id);
+    return wrongText(b.why, pick, o => {
+      const st = swText(lv, o.st).replace(/^ · /, "");
+      return `${o.mode === "V" ? "in tensione" : "in continuità"} tra ${termShort(lv, o.a, wires)} e ${termShort(lv, o.b, wires)}${st ? ` (${st})` : ""}`;
+    });
   }
   function vBanco(lv) {
     const r = S.run, b = r.bench, f = curFault(), s = benchSetup(lv);
@@ -1022,22 +980,26 @@ export function mountGame(app) {
     const found = !!(b.diag && b.diag.ok);
     const hasSw = lv.board.comps.some(c => ["interruttore", "deviatore", "invertitore"].includes(c.kind));
     let tail = "";
+    const guessed = found && !b.proven ? `<p class="warn-txt"><strong>Giusto, ma non ancora dimostrato:</strong> ${esc(b.gaps.join("; "))}. In cantiere prima si dimostra, poi si ripara.</p>` : "";
     if (!found) {
-      tail = `<section class="card" id="diag"><h2 class="h3">Il guasto</h2>
-        ${b.diag && !b.diag.ok ? `<div class="res warn" id="diagres"><h2>Non torna.</h2><p>Le misure non dicono questo. Torna a misurare: dove c'è tensione a un capo di un collegamento e non all'altro, il guasto è lì in mezzo.</p></div>` : ""}
-        ${b.diagOpen ? `<p class="muted">Il guasto è…</p><div class="opts">${b.order.map(id => { const x = lv.faults.find(k => k.id === id); const tried = b.diag && b.diag.id === id; return `<button class="opt${tried ? " bad" : ""}" data-act="diagPick" data-arg="${id}">${esc(x.label)}</button>`; }).join("")}</div>`
-          : `<p class="muted">Quando le misure ti dicono dov'è, scegli la diagnosi. Se sbagli puoi riprovare, ma la stella della diagnosi va al primo colpo.</p><div class="row"><button class="btn btn-p" data-act="diagOpen">Ho trovato il guasto</button></div>`}</section>`;
+      tail = `<section class="card" id="diag"><h2 class="h3">La diagnosi</h2>
+        ${b.diag && !b.diag.ok ? `<div class="res warn" id="diagres"><h2>Non torna.</h2><p>${esc(wrongWhy(lv, b))}</p></div>` : ""}
+        ${b.diagOpen ? `<p class="muted">${hasNone(lv) ? "Il risultato…" : "Il guasto è…"}</p><div class="opts">${b.order.map(id => { const x = lv.faults.find(k => k.id === id); const tried = b.diag && b.diag.id === id; return `<button class="opt${tried ? " bad" : ""}" data-act="diagPick" data-arg="${id}">${esc(x.label)}</button>`; }).join("")}</div>`
+          : `<p class="muted">Quando le misure ti dicono cos'è, scegli la diagnosi. Se sbagli puoi riprovare, ma la stella della diagnosi va al primo colpo; quella del metodo vuole misure che la dimostrino.</p><div class="row"><button class="btn btn-p" data-act="diagOpen">Ho la diagnosi</button></div>`}</section>`;
+    } else if (f.none) {
+      tail = `<div class="res ok" id="diagres"><span class="eyebrow">Diagnosi</span><h2>${esc(f.label)}.</h2>${guessed}<p><strong>Un modo per dimostrarlo:</strong> ${esc(f.proof)}</p></div>
+        <div class="row"><button class="btn btn-p" data-act="next">Niente da riparare: domande dal furgone</button></div>`;
     } else if (!b.repaired) {
-      tail = `<div class="res ok" id="diagres"><span class="eyebrow">Diagnosi</span><h2>${esc(f.label)}.</h2><p>${esc(f.proof)}</p></div>
+      tail = `<div class="res ok" id="diagres"><span class="eyebrow">Diagnosi</span><h2>${esc(f.label)}.</h2>${guessed}<p><strong>Un modo per dimostrarlo:</strong> ${esc(f.proof)}</p></div>
         <section class="card"><h2 class="h3">Riparazione</h2><p>Si ripara ${esc(f.where)}. Prima di mettere le mani: linea spenta al quadro.</p><div class="row"><button class="btn btn-p" data-act="repair">Ripara</button></div></section>`;
     } else {
       const col = collaudo(lv, healthyWires(lv));
       tail = b.tested && b.on ? `<div class="res ok"><span class="eyebrow">Collaudo</span><h2>${col.funziona ? "Funziona." : "Ancora qualcosa non va."}</h2><p>${hasSw ? "Gira i comandi: ora la luce risponde in tutte le posizioni." : "Ora la presa dà 230 V tra i due laterali e la terra c'è."}</p></div><div class="row"><button class="btn btn-p" data-act="next">Domande dal furgone</button></div>`
         : `<div class="res ok"><span class="eyebrow">Riparato</span><h2>Fatto: ${esc(f.where)}.</h2><p>Ora ridai tensione e prova.</p></div>`;
     }
-    return `<p class="eyebrow">Banco guasti · ${b.repaired ? "riparato" : found ? "trovato" : "trova il guasto"}</p><h1 class="h2">${esc(lv.short)}</h1>
+    return `<p class="eyebrow">Banco guasti · ${b.repaired ? "riparato" : found ? "trovato" : hasNone(lv) ? "verifica" : "trova il guasto"}</p><h1 class="h2">${esc(lv.short)}</h1>
       <div class="msg"><span class="msg-who">${esc(lv.client.who)} · ${esc(lv.client.where)}</span><p>${esc(f.msg)}</p></div>
-      <p class="muted">La leva accende e spegne la linea${hasSw ? "; i comandi si girano toccandoli" : ""}. Per misurare tocca due morsetti: il primo è il puntale rosso, il secondo il nero (un altro tocco sposta il nero).</p>
+      <p class="muted">La leva accende e spegne la linea${hasSw ? "; i comandi si girano toccandoli" : ""}. Prima prova il tester, col pulsante sotto il display. Per misurare tocca due morsetti: il primo è il puntale rosso, il secondo il nero; ogni altro tocco sposta il nero, e toccando il rosso li togli tutti e due. Per misurare tanti punti verso la terra, metti prima il rosso sulla terra: quella della scatola (il foro dove arriva il giallo-verde della linea) se c'è, se no il ⏚ del pezzo che misuri. I puntali arrivano dappertutto. ${hasNone(lv) ? "Può esserci un difetto, uno solo, oppure nessuno." : "C'è un guasto, uno solo."}</p>
       ${lv.note ? `<p class="note-txt">${esc(lv.note)}</p>` : ""}
       ${b.shock ? shockHTML : ""}
       <div class="quadro bench-q">${vRail([lineBreaker(lv)], { line: b.on ? 1 : 0 }, "lineTog", b.tripped ? "line" : null)}<p class="status" aria-live="polite">${esc(benchStatus(lv, ev))}</p></div>
@@ -1075,7 +1037,7 @@ export function mountGame(app) {
       return [!!r.safeStar, regola, !!r.firstOk];
     }
     if (lv.type === "indagine") { const s = r.ind; return [s.trips <= 3, s.chi === "lavat", !!(s.cosa != null && lv.ind.cosa[s.cosa].ok)]; }
-    if (lv.type === "guasto") { const b = r.bench, f = lv.faults[b.fi]; return [!b.unsafe && !r.shocked, b.measures <= f.minMeasures + 3, b.firstDiag === true]; }
+    if (lv.type === "guasto") { const b = r.bench, f = lv.faults[b.fi]; return [!b.unsafe && !r.shocked, !!b.proven && b.measures <= f.minMeasures + 3, b.firstDiag === true]; }
     return r.ser.m.slice();
   }
   function starWhy(lv, st) {
@@ -1095,7 +1057,7 @@ export function mountGame(app) {
       const b = r.bench, f = lv.faults[b.fi], n = b.measures;
       return [
         st[0] ? "Continuità a linea spenta, riparazione fuori tensione." : r.shocked ? "Hai messo le mani sui fili con la linea accesa." : "Hai misurato la continuità con la linea accesa.",
-        st[1] ? `${n} ${n === 1 ? "misura" : "misure"}: col metodo si va dritti al punto.` : `${n} misure. Con il metodo ne bastano circa ${f.minMeasures + 1}.`,
+        st[1] ? `${n} ${n === 1 ? "misura" : "misure"}, e dimostrano la diagnosi.` : !b.proven ? `Diagnosi non dimostrata: ${({ alt: "poteva essere anche un'altra risposta", difetto: "nessuna misura faceva vedere il difetto", tester: "il tester non era stato provato" })[b.gapKind] || "mancava una misura"}.` : `${n} misure. Con il metodo ne bastano circa ${f.minMeasures + 1}.`,
         st[2] ? "Diagnosi giusta al primo colpo." : "La prima diagnosi era sbagliata: prima di dirlo, misura ai due capi.",
       ];
     }
@@ -1116,7 +1078,7 @@ export function mountGame(app) {
       <div class="stars">${lv.stars.map((name, i) => `<div class="star${r.stars[i] ? " on" : ""}"><span class="dot" aria-hidden="true"></span><b>${esc(name)}</b><span>${esc(why[i])}</span><span class="vh">${r.stars[i] ? "stella presa" : "stella non presa"}</span></div>`).join("")}</div>
       ${r.quiz ? `<p class="muted">Domande dal furgone: ${r.quiz.score} giuste su ${r.quiz.items.length}.</p>` : ""}
       ${words.length ? `<section class="card"><h2 class="h3">Parole nuove</h2><table class="gergo"><thead><tr><th>Tecnico</th><th>In cantiere</th></tr></thead><tbody>${words.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join("")}</tbody></table></section>` : ""}
-      <div class="row">${nx ? `<button class="btn btn-p" data-act="open" data-arg="${nx.id}">Prossimo: ${lvNum(nx)} · ${esc(nx.title)}</button>` : `<button class="btn btn-p" data-act="quaderno">Apri il quaderno</button>`}<button class="btn btn-s" data-act="retry">${lv.type === "guasto" ? "Un altro guasto" : "Rigioca"}</button><button class="btn btn-s" data-act="home">Mappa</button></div>`;
+      <div class="row">${nx ? `<button class="btn btn-p" data-act="open" data-arg="${nx.id}">Prossimo: ${lvNum(nx)} · ${esc(nx.title)}</button>` : `<button class="btn btn-p" data-act="quaderno">Apri il quaderno</button>`}<button class="btn btn-s" data-act="retry">${lv.type === "guasto" ? "Un altro caso" : "Rigioca"}</button><button class="btn btn-s" data-act="home">Mappa</button></div>`;
   }
 
   /* quaderno */
@@ -1395,7 +1357,7 @@ export function mountGame(app) {
       r.pst[id] = r.pst[id] ? 0 : 1;
       if (S.step === "banco") {
         const lv = lvCur(), b = r.bench;
-        if (b.on) { const t = powerCheck(benchSetup(lv), r.pst); if (t) { b.on = false; b.tripped = t; b.log.push({ t: `Giri il comando: scatta ${t === "corto" ? "il magnetotermico" : "il differenziale"}.`, k: "bad" }); } }
+        if (b.on) { const t = powerCheck(benchSetup(lv), r.pst); if (t) { b.on = false; b.tripped = t; b.log.push({ t: `Giri il comando: scatta ${t === "corto" ? "il magnetotermico" : "il differenziale"}.`, k: "bad" }); } else seeLight(b); }
         logMeasure(lv);
       }
       render();
@@ -1407,6 +1369,8 @@ export function mountGame(app) {
     lineOff() { const lv = lvCur(); benchPower(lv, false); logMeasure(lv); render(); },
     meterMode(m) { const lv = lvCur(); S.run.bench.mode = m === "ohm" ? "ohm" : "V"; logMeasure(lv); render(); },
     probesOff() { const b = S.run.bench; b.probes = []; b.lastKey = null; render(); },
+    /* prova del tester su una presa che sai viva, prima di fidarti delle letture */
+    testerProva() { const b = S.run.bench; b.tester = true; b.log.push({ t: "Prova del tester su una presa viva: 230 V. Puntali uniti: suona. Il tester funziona.", k: "good" }); render(); },
     probeT(id) {
       const lv = lvCur(), b = S.run.bench;
       if (b.probes[0] === id) b.probes = [];
@@ -1418,8 +1382,15 @@ export function mountGame(app) {
     },
     diagOpen() { S.run.bench.diagOpen = true; render(); scrollToId("diag"); },
     diagPick(id) {
-      const b = S.run.bench, ok = id === curFault().id;
+      const lv = lvCur(), b = S.run.bench, truth = curFault(), ok = id === truth.id;
       if (b.firstDiag == null) b.firstDiag = ok;
+      if (ok) {
+        // dimostrata: niente altro si accorda con chiamata, fili, luce vista e misure; una misura fa vedere il difetto; tester provato
+        const c = checkProof(lv, truth, { obs: b.obs, seen: b.seen, tester: b.tester });
+        b.proven = c.proven;
+        b.gaps = proofGaps(c);
+        b.gapKind = c.alt.length ? "alt" : c.noDefect ? "difetto" : "tester";
+      } else b.why = contradiction(lv, truth, lv.faults.find(x => x.id === id), b.obs, b.seen);
       b.diag = { id, ok };
       b.diagOpen = !ok;
       render();
@@ -1427,6 +1398,7 @@ export function mountGame(app) {
     },
     repair() {
       const r = S.run, b = r.bench;
+      if (curFault().none) return;
       if (b.on) { b.shock = true; r.shocked = true; render(); scrollToId("shock"); return; }
       b.repaired = true; b.shock = false; b.probes = []; b.lastKey = null;
       b.log.push({ t: `Riparato: ${curFault().where}.`, k: "good" });

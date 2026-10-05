@@ -20,8 +20,13 @@ test("banco guasti col dito: il ritorno interrotto del ripostiglio", async ({ pa
     await t.tap();
   };
 
+  await test.step("prima si prova il tester", async () => {
+    await page.locator('[data-act="testerProva"]').tap();
+    await expect(page.locator('[data-act="testerProva"]')).toHaveText("Tester provato");
+  });
+
   await test.step("linea accesa e interruttore acceso, toccando", async () => {
-    await page.locator('[data-act="lineTog"]').tap();
+    await page.locator('.bench-q [data-act="lineTog"]').tap();
     await page.locator('[data-act="toggleSw"][data-arg="I"]').tap();
     await expect(page.locator(".bench-q .status")).toHaveText(/Linea accesa\. Luce spenta\./);
   });
@@ -35,13 +40,16 @@ test("banco guasti col dito: il ritorno interrotto del ripostiglio", async ({ pa
   await test.step("il nero si sposta sul morsetto 2 dell'interruttore: 230 V", async () => {
     await tapTerm("I.2");
     await expect(lcd).toHaveText("230");
-    expect(await page.evaluate(() => (window as any).__fnt.S.run.bench.log.length)).toBe(2);
+    // nel registro: la prova del tester e le due misure
+    expect(await page.evaluate(() => (window as any).__fnt.S.run.bench.log.length)).toBe(3);
   });
 
   await test.step("continuità a linea spenta tra i due capi del nero: aperto", async () => {
     await page.locator('[data-act="meterMode"][data-arg="ohm"]').tap();
     await expect(lcd).toHaveText("!"); // linea ancora accesa: la misura non vale
-    await page.locator('[data-act="lineTog"]').tap();
+    // la linea si spegne anche dal pannello del tester, senza risalire alla leva
+    await page.locator('#sheet [data-act="lineTog"]').tap();
+    await expect(page.locator('#sheet [data-act="lineTog"]')).toHaveText("Linea spenta");
     await expect(lcd).toHaveText("OL");
   });
 
@@ -49,8 +57,9 @@ test("banco guasti col dito: il ritorno interrotto del ripostiglio", async ({ pa
     await page.locator('[data-act="diagOpen"]').tap();
     await page.locator('[data-act="diagPick"][data-arg="ritorno"]').tap();
     await expect(page.locator("#diagres")).toContainText("Il ritorno tra interruttore e plafoniera");
+    await expect(page.locator("#diagres")).not.toContainText("non ancora dimostrato");
     await page.locator('[data-act="repair"]').tap();
-    await page.locator('[data-act="lineTog"]').tap();
+    await page.locator('.bench-q [data-act="lineTog"]').tap();
     await expect(page.locator(".res.ok").last()).toContainText("Funziona");
     await expect(page.locator(".bench-q .status")).toHaveText(/Luce accesa/);
   });

@@ -2,7 +2,7 @@
    Uso: npm run build:artifact && npm run packets -- [cartella] [id livelli separati da virgola]
    Gli aiuti finiscono in un file a parte (<id>-aiuti.md), da aprire solo se il revisore si blocca. */
 import { chromium } from "@playwright/test";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,7 +27,19 @@ const levels: string[] = await page.evaluate(() => (window as any).__fnt.LEVELS.
 const text = (sel: string) => page.evaluate(s => [...document.querySelectorAll(s)].map(e => (e as HTMLElement).innerText.trim()).filter(Boolean).join("\n"), sel);
 const shot = async (name: string) => {
   await page.evaluate(() => window.scrollTo(0, 0));
+  // il pannello del tester è fisso in basso: nella foto di tutta la pagina va in fondo, dove non copre niente
+  const st = await page.addStyleTag({ content: "#sheet{position:static!important;transform:none!important;width:auto!important;margin:12px 16px!important}" });
   await page.screenshot({ path: join(OUT, name), fullPage: true });
+  await st.evaluate(e => (e as Element).remove());
+  return name;
+};
+/** come lo vedi sul telefono mentre misuri: la tavola sotto la barra in alto, il tester fisso in basso */
+const phoneShot = async (name: string) => {
+  await page.evaluate(() => {
+    const b = document.querySelector(".board")!, bar = document.querySelector("header.bar") as HTMLElement | null;
+    window.scrollTo(0, b.getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 8);
+  });
+  await page.screenshot({ path: join(OUT, name) });
   return name;
 };
 
@@ -43,7 +55,7 @@ for (const id of levels) {
         .filter(Boolean)
         .join("\n");
     const num = l.cap === 1 ? String(l.n) : `${l.cap}.${F.LEVELS.filter((x: any) => x.cap === l.cap).indexOf(l) + 1}`;
-    return { n: num, title: l.title, type: l.type, client: l.client, learn: l.learn, cards: l.cards.map((k: string) => card(C[k])), hints: l.hints || [], check: (l.check || []).map((c: any) => c.t), shop: l.shop ? l.shop.q + "\n" + l.shop.opts.map((o: any) => "- " + o.t).join("\n") : null, nFaults: (l.faults || []).length };
+    return { n: num, title: l.title, type: l.type, client: l.client, learn: l.learn, cards: l.cards.map((k: string) => card(C[k])), hints: l.hints || [], check: (l.check || []).map((c: any) => c.t), shop: l.shop ? l.shop.q + "\n" + l.shop.opts.map((o: any) => "- " + o.t).join("\n") : null, nFaults: (l.faults || []).length, hasNone: (l.faults || []).some((f: any) => f.none) };
   }, id);
   md.push(`# ${info.type === "guasto" ? "Banco guasti" : "Intervento"} ${info.n} · ${info.title}`, "", `**Chiamata** (${info.client.who}, ${info.client.where}): «${info.client.msg}»`, "", "**Cosa impari:** " + info.learn.join("; "), "", "## Schede di teoria (lette prima del lavoro)", "", info.cards.join("\n\n"), "");
   await page.evaluate(id => {
@@ -101,10 +113,10 @@ for (const id of levels) {
         l = F.LEVELS.find((x: any) => x.id === id);
       F.ACTS.setFault(String(Math.max(0, l.faults.findIndex((f: any) => !f.rewire))));
     }, id);
-    md.push("## Il banco (schermata: " + (await shot(`${id}-1-banco.png`)) + ")", "");
+    md.push("## Il banco (schermate: tutta la pagina " + (await shot(`${id}-1-banco.png`)) + "; mentre misuri, sul telefono " + (await phoneShot(`${id}-2-banco-telefono.png`)) + ")", "");
     md.push("Sullo schermo, sopra la tavola:", "", await text("main > p.muted"), "", await text("main > p.note-txt"), "");
-    md.push("Sotto la tavola c'è il tester (tensione o continuità, due puntali), il registro delle misure e il pulsante «Ho trovato il guasto», che apre l'elenco delle diagnosi possibili.", "");
-    md.push(`### Come giochi questo livello`, "", `Il gioco sceglie a caso uno di ${info.nFaults} guasti possibili su questo impianto. Al posto dello schermo usi il banco da riga di comando, che fa le stesse misure del gioco e tiene nascosto il guasto:`, "", "```sh", `cd ${root}`, `npx tsx scripts/banco.ts ${id} <numero del caso> <<'FINE'`, "punti", "opzioni", "linea on", "FINE", "```", "", "Comandi: `punti` · `guarda` (i fili come li vedi sulla tavola) · `opzioni` (le diagnosi possibili) · `stato` · `linea on|off` · `comando <id> <0|1>` · `tensione <a> <b>` · `continuita <a> <b>` · `diagnosi <numero>`. Ogni volta rilanci il comando con tutta la lista: stesso numero del caso, stesso guasto.", "");
+    md.push("In basso, fisso sullo schermo, c'è il tester: il display con sotto il pulsante «Prova il tester», i due modi (tensione o continuità) e i nomi dei morsetti dove hai appoggiato i puntali. Sotto la tavola ci sono il registro delle misure e il pulsante «Ho la diagnosi», che apre l'elenco delle risposte possibili.", "");
+    md.push(`### Come giochi questo livello`, "", `Il gioco pesca a caso uno di ${info.nFaults} casi: ${info.hasNone ? "uno per ogni difetto possibile, più quello in cui l'impianto è a posto" : "uno per ogni guasto possibile su questo impianto"}. Al posto dello schermo usi il banco da riga di comando, che fa le stesse misure del gioco e tiene nascosto il caso:`, "", "```sh", `cd ${root}`, `npx tsx scripts/banco.ts ${id} <numero del caso> <<'FINE'`, "punti", "opzioni", "linea on", "FINE", "```", "", "Comandi: `punti` · `guarda` (i fili come li vedi sulla tavola) · `opzioni` (le risposte possibili) · `prova` (prova il tester su una presa viva, come il pulsante «Prova il tester») · `stato` (la linea, i comandi e la luce: nel gioco la luce la vedi sulla tavola, qui con `stato`) · `linea on|off` · `comando <id> <0|1>` · `tensione <a> <b>` · `continuita <a> <b>` · `diagnosi <numero>`. Ogni volta rilanci il comando con tutta la lista: stesso numero del caso, stesso guasto.", "", "Come nel gioco, l'ordine delle opzioni cambia da un caso all'altro: `diagnosi` ripete quella che hai scelto, dice se è giusta e se le tue misure la dimostrano.", "");
   } else if (info.type === "indagine") {
     md.push("## Indagine (schermata iniziale: " + (await shot(`${id}-1-sintomo.png`)) + ")", "", await text("main"), "");
     await page.evaluate(() => (window as any).__fnt.ACTS.indBet("2"));
@@ -119,4 +131,21 @@ for (const id of levels) {
   writeFileSync(join(OUT, `${id}.md`), md.join("\n"));
   console.log("pacchetto", id);
 }
+/* il quaderno: tutte le schede, intervento per intervento (il revisore legge fino al livello che gioca) */
+const quaderno: string[] = await page.evaluate(() => {
+  const F = (window as any).__fnt,
+    out = ["# Quaderno: le schede di teoria, intervento per intervento", "", "Leggi le schede degli interventi fino a quello che stai giocando, compreso.", ""];
+  for (const l of F.LEVELS) {
+    const num = l.cap === 1 ? String(l.n) : `${l.cap}.${F.LEVELS.filter((x: any) => x.cap === l.cap).indexOf(l) + 1}`;
+    out.push(`## ${num} · ${l.title}`, "");
+    for (const id of l.cards) {
+      const c = F.CARDS[id];
+      out.push(`### ${c.t}`, ...(c.ol || []).map((x: string, i: number) => `${i + 1}. ${x}`), ...(c.p || []), c.f ? "Formule: " + c.f.join(" · ") : "", c.g ? "Parole (tecnico → cantiere): " + c.g.map(([a, b]: string[]) => `${a} → ${b}`).join("; ") : "", c.capo ? `Il capo dice: ${c.capo}` : "", "");
+    }
+  }
+  return out;
+});
+writeFileSync(join(OUT, "quaderno.md"), quaderno.filter((x, i, a) => !(x === "" && a[i - 1] === "")).join("\n"));
 await browser.close();
+// la pagina del gioco contiene le soluzioni: nella cartella del revisore non resta
+rmSync(file);

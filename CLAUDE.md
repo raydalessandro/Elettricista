@@ -11,11 +11,12 @@ Gioco per imparare l'impianto elettrico di casa, per Ray (Milano). Esce **un cap
 ```sh
 npm install
 npm run dev          # sito in locale
-npm run check        # tipi, lint, standard (S1–S17), test unitari e giro completo
+npm run check        # tipi, lint, standard (S1–S18), test unitari e giro completo
 npm run build        # build di produzione
 npm run test:e2e     # prove col dito su telefono 390×844 (serve la build); in locale: PW_CHROMIUM=/percorso/chromium
 npm run standard     # solo il controllo dello standard, livello per livello
 npm run packets      # pacchetti per la prova alla cieca (dist/playtest)
+npx tsx scripts/banco.ts g1 1   # banco guasti da riga di comando, per i revisori (comandi da stdin)
 ```
 
 ## Dove sta cosa
@@ -24,7 +25,9 @@ npm run packets      # pacchetti per la prova alla cieca (dist/playtest)
 |---|---|
 | `src/core/engine.ts` | Motore: reti, potenziali, collaudo su tutte le combinazioni dei comandi |
 | `src/core/rules.ts` | Regole della tavola (cosa si collega a cosa). Le usano gioco e controlli |
-| `src/core/faults.ts` | Banco guasti: guasti, tester (tensione e continuità), sintomi, firme delle misure |
+| `src/core/faults.ts` | Banco guasti: guasti, tester (tensione e continuità), sintomi, firme delle misure, la prova (diagnosi dimostrata) |
+| `src/core/geometry.ts` | Disegno dei fili: curve che non coprono morsetti, scritte e pezzi altrui (e il controllo S18) |
+| `src/core/names.ts` | Nomi di pezzi e morsetti, uguali nel gioco e nel banco da riga di comando |
 | `src/core/types.ts` | Formato dei dati: livelli, tavola, guasti |
 | `src/content/` | Contenuti: `capitoli/capN.ts`, schede, prontuario, `index.ts` con l'elenco dei capitoli |
 | `src/standard/validate.ts` | Controllo automatico dello standard |
@@ -38,7 +41,7 @@ npm run packets      # pacchetti per la prova alla cieca (dist/playtest)
 2. Scrivi `src/content/capitoli/capN.ts` (livelli + schede del capitolo) e aggiungilo a `src/content/index.ts` (`CHAPTERS`, `LEVELS`, `CARDS`). I numeri `n` continuano quelli del capitolo prima.
 3. Se servono pezzi nuovi (pulsanti, relè, timer…), estendi `engine.ts` e i tipi, con test in `tests/unit/`.
 4. `npm run check` deve dare 0 errori. Gli avvisi si leggono uno per uno.
-5. Prova alla cieca: `npm run packets`, poi un revisore che non ha visto il progetto gioca i pacchetti (aiuti in un file a parte). Ogni assunzione su qualcosa che non è sullo schermo è un difetto.
+5. Prova alla cieca: `npm run packets`, poi un revisore che non ha visto il progetto gioca i pacchetti (aiuti in un file a parte; per il banco guasti usa `scripts/banco.ts`). Ogni assunzione su qualcosa che non è sullo schermo è un difetto.
 6. `npm run build && npm run test:e2e`, poi aggiorna `docs/CAPITOLI.md` (stato e data) e fai push su `main`.
 
 ## Regole fisse

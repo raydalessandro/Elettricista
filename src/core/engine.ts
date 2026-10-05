@@ -28,6 +28,8 @@ export type SwitchStates = Record<string, number>;
 export interface EvalOptions {
   /** pezzi rotti: lampadina bruciata, interruttore che non chiude */
   broken?: ReadonlySet<string>;
+  /** prese vuote, senza niente attaccato: non portano tensione da un foro all'altro (misure col tester) */
+  emptySockets?: boolean;
 }
 
 /** Potenziale di una rete. "L~" = in tensione attraverso un carico. */
@@ -152,7 +154,9 @@ export function evaluate(lv: EngineLevel, wires: readonly Link[], states?: Switc
 
   // un carico integro porta il potenziale dall'altra parte, senza corrente ("~")
   const loads = comps.filter(c => (LOAD_KINDS as readonly string[]).includes(c.kind));
-  const conducting = loads.filter(c => !broken?.has(c.id));
+  // una presa conduce solo se c'è un apparecchio attaccato (di solito sì: il cliente la usa)
+  const idle = (c: Comp) => !!opts?.emptySockets && c.kind === "presa";
+  const conducting = loads.filter(c => !broken?.has(c.id) && !idle(c));
   let changed = true,
     guard = 0;
   while (changed && guard++ < 60) {
@@ -191,7 +195,7 @@ export function evaluate(lv: EngineLevel, wires: readonly Link[], states?: Switc
     const a = potOf(ta),
       b = potOf(tb);
     const pair = [a || "-", b || "-"].sort().join("|");
-    const whole = !broken?.has(c.id);
+    const whole = !broken?.has(c.id) && !idle(c);
     const on = whole && !res.corto && pair === "L|N";
     const toEarth = whole && !res.corto && pair === "L|PE";
     if (on || toEarth) anyCurrent = true;

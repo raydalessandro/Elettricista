@@ -7,7 +7,7 @@ L'ordine segue i pannelli didattici per impianti civili (per esempio i 44 eserci
 | N. | Capitolo | Cosa si impara | Pezzi nuovi nel motore | Stato |
 |---|---|---|---|---|
 | 1 | Le basi | Circuito, colori, terra, procedura al quadro, punto luce, presa, deviata, invertitore, differenziale, contatore | — | uscito il 4 ottobre 2026 |
-| 2 | Banco guasti | Tester: tensione e continuità. Metodo: dal sintomo al punto. Lampadina bruciata, contatto aperto, neutro interrotto, interruttore sul neutro, terra mancante, scambi | tester, guasti, sintomi | in preparazione |
+| 2 | Banco guasti | Tester: tensione e continuità, e la prova del tester. Metodo: dal sintomo al punto, e la diagnosi dimostrata dalle misure. Lampadina bruciata, contatto aperto, neutro interrotto, interruttore sul neutro, ritorno e neutro scambiati, terra mancante, presa morta, scambi, coppie dell'invertitore | tester, guasti, sintomi, prova delle misure, disegno dei fili | uscito il 5 ottobre 2026 |
 | 3 | Quattro punti e relè | Luce da quattro punti, pulsanti, relè passo-passo | pulsanti, relè, collaudo a sequenze | da fare |
 | 4 | Il quadro di casa | Generale, differenziale, magnetotermici per linea, morsettiere, etichette, selettività di base | cablaggio del quadro | da fare |
 | 5 | Linee e prese | Dorsale, derivazioni in scatola, prese 10/16 A, linee dedicate, sezioni 1,5 / 2,5 / 4 mm² | carichi e sezioni | da fare |

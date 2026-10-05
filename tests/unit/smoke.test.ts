@@ -189,9 +189,16 @@ function playGuasto(lv: GuastoLevel) {
     A.diagOpen();
     A.diagPick(lv.faults[fi].id);
     expect(F.S.run.bench.diag.ok).toBe(true);
-    A.repair();
-    expect(F.S.run.bench.repaired).toBe(true);
-    A.lineOn();
+    if (lv.faults[fi].none) {
+      // «nessun difetto»: niente da riparare
+      expect(text()).toContain("Niente da riparare");
+      A.repair();
+      expect(F.S.run.bench.repaired).toBe(false);
+    } else {
+      A.repair();
+      expect(F.S.run.bench.repaired).toBe(true);
+      A.lineOn();
+    }
     if (fi < lv.faults.length - 1) continue;
     A.next();
   }
