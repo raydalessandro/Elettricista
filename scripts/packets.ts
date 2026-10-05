@@ -42,9 +42,10 @@ for (const id of levels) {
       [`### ${c.t}`, ...(c.ol || []).map((x: string, i: number) => `${i + 1}. ${x}`), ...(c.p || []), c.f ? "Formule: " + c.f.join(" · ") : "", c.g ? "Parole (tecnico → cantiere): " + c.g.map(([a, b]: string[]) => `${a} → ${b}`).join("; ") : "", c.capo ? `Il capo dice: ${c.capo}` : ""]
         .filter(Boolean)
         .join("\n");
-    return { n: l.n, title: l.title, type: l.type, client: l.client, learn: l.learn, cards: l.cards.map((k: string) => card(C[k])), hints: l.hints || [], check: (l.check || []).map((c: any) => c.t), shop: l.shop ? l.shop.q + "\n" + l.shop.opts.map((o: any) => "- " + o.t).join("\n") : null, nFaults: (l.faults || []).length };
+    const num = l.cap === 1 ? String(l.n) : `${l.cap}.${F.LEVELS.filter((x: any) => x.cap === l.cap).indexOf(l) + 1}`;
+    return { n: num, title: l.title, type: l.type, client: l.client, learn: l.learn, cards: l.cards.map((k: string) => card(C[k])), hints: l.hints || [], check: (l.check || []).map((c: any) => c.t), shop: l.shop ? l.shop.q + "\n" + l.shop.opts.map((o: any) => "- " + o.t).join("\n") : null, nFaults: (l.faults || []).length };
   }, id);
-  md.push(`# Intervento ${info.n} · ${info.title}`, "", `**Chiamata** (${info.client.who}, ${info.client.where}): «${info.client.msg}»`, "", "**Cosa impari:** " + info.learn.join("; "), "", "## Schede di teoria (lette prima del lavoro)", "", info.cards.join("\n\n"), "");
+  md.push(`# ${info.type === "guasto" ? "Banco guasti" : "Intervento"} ${info.n} · ${info.title}`, "", `**Chiamata** (${info.client.who}, ${info.client.where}): «${info.client.msg}»`, "", "**Cosa impari:** " + info.learn.join("; "), "", "## Schede di teoria (lette prima del lavoro)", "", info.cards.join("\n\n"), "");
   await page.evaluate(id => {
     const A = (window as any).__fnt.ACTS,
       l = (window as any).__fnt.LEVELS.find((x: any) => x.id === id);
@@ -94,10 +95,16 @@ for (const id of levels) {
     if (locked.length) md.push("### Pezzi già collegati", "", ...locked, "");
     md.push("### Controllo prima di ridare tensione (domande che il gioco ti fa dopo)", "", ...info.check.map((c: string) => "- " + c), "");
   } else if (info.type === "guasto") {
-    md.push("## Il banco (schermata: " + (await shot(`${id}-1-banco.png`)) + ")", "", await text("main"), "");
-    const nodes = await page.evaluate(() => [...document.querySelectorAll("[data-act=probeT]")].map(e => `- \`${(e as HTMLElement).dataset.arg}\` = ${e.getAttribute("aria-label")}`));
-    md.push("### Punti dove appoggi i puntali", "", ...nodes, "");
-    md.push(`Il gioco sceglie uno di ${info.nFaults} guasti possibili su questo impianto.`, "");
+    // la schermata mostra la tavola com'è montata di solito: un guasto che non sposta fili
+    await page.evaluate(id => {
+      const F = (window as any).__fnt,
+        l = F.LEVELS.find((x: any) => x.id === id);
+      F.ACTS.setFault(String(Math.max(0, l.faults.findIndex((f: any) => !f.rewire))));
+    }, id);
+    md.push("## Il banco (schermata: " + (await shot(`${id}-1-banco.png`)) + ")", "");
+    md.push("Sullo schermo, sopra la tavola:", "", await text("main > p.muted"), "", await text("main > p.note-txt"), "");
+    md.push("Sotto la tavola c'è il tester (tensione o continuità, due puntali), il registro delle misure e il pulsante «Ho trovato il guasto», che apre l'elenco delle diagnosi possibili.", "");
+    md.push(`### Come giochi questo livello`, "", `Il gioco sceglie a caso uno di ${info.nFaults} guasti possibili su questo impianto. Al posto dello schermo usi il banco da riga di comando, che fa le stesse misure del gioco e tiene nascosto il guasto:`, "", "```sh", `cd ${root}`, `npx tsx scripts/banco.ts ${id} <numero del caso> <<'FINE'`, "punti", "opzioni", "linea on", "FINE", "```", "", "Comandi: `punti` · `guarda` (i fili come li vedi sulla tavola) · `opzioni` (le diagnosi possibili) · `stato` · `linea on|off` · `comando <id> <0|1>` · `tensione <a> <b>` · `continuita <a> <b>` · `diagnosi <numero>`. Ogni volta rilanci il comando con tutta la lista: stesso numero del caso, stesso guasto.", "");
   } else if (info.type === "indagine") {
     md.push("## Indagine (schermata iniziale: " + (await shot(`${id}-1-sintomo.png`)) + ")", "", await text("main"), "");
     await page.evaluate(() => (window as any).__fnt.ACTS.indBet("2"));

@@ -1,8 +1,9 @@
 /* ====== INTERFACCIA ======
    Il gioco disegna le schermate come stringhe HTML e gestisce i tocchi con un solo ascoltatore.
    mountGame(app) lo monta dentro un elemento: lo usano la pagina Next.js e la versione in un file solo. */
-import { CARDS, LEVELS, PRONTUARIO, WIRES } from "../content";
+import { CARDS, CHAPTERS, LEVELS, PRONTUARIO, WIRES } from "../content";
 import { collaudo, evaluate, termIds } from "../core/engine";
+import { applyFault, healthyWires, powerCheck, probePoints, readContinuity, readVoltage } from "../core/faults";
 import { RULES } from "../core/rules";
 
 export function mountGame(app) {
@@ -47,7 +48,7 @@ export function mountGame(app) {
 
   /* ---------- progressi (solo su questo dispositivo) ---------- */
   const KEY = "fase-neutro-terra.v1";
-  const freshProg = () => ({ v: 1, done: {}, cards: [], bets: { won: 0, tot: 0 }, free: false });
+  const freshProg = () => ({ v: 1, done: {}, cards: [], bets: { won: 0, tot: 0 }, free: false, lastFault: {} });
   let prog = freshProg();
   try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && s.v === 1) prog = Object.assign(freshProg(), s); } catch (e) { /* niente memoria: si gioca lo stesso */ }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) { /* ignora */ } }
@@ -56,14 +57,19 @@ export function mountGame(app) {
   /* ---------- stato ---------- */
   let S = { screen: "home", lv: null, step: null, run: null, qtab: "schede", confirmReset: false };
   const lvCur = () => LV[S.lv];
-  const unlocked = l => prog.free || l.n === 1 || !!prog.done[LEVELS[l.n - 2].id];
+  /* ogni capitolo si apre dal suo primo intervento; dentro il capitolo si va in ordine */
+  const firstOfCap = l => LEVELS.find(x => x.cap === l.cap);
+  const unlocked = l => prog.free || firstOfCap(l) === l || !!prog.done[LEVELS[l.n - 2].id];
+  /* numero da mostrare: 1…9 nel primo capitolo, poi 2.1, 2.2… */
+  const lvNum = l => (l.cap === 1 ? String(l.n) : `${l.cap}.${LEVELS.filter(x => x.cap === l.cap).indexOf(l) + 1}`);
   const nextLevel = () => LEVELS.find(l => !prog.done[l.id]) || null;
 
   function stepsOf(lv) {
     if (lv.type === "fili") return ["chiamata", "teoria"].concat(lv.shop ? ["negozio"] : [], ["quadro", "fili", "controllo", "scommessa", "collaudo", "furgone", "esito"]);
+    if (lv.type === "guasto") return ["chiamata", "teoria", "banco", "furgone", "esito"];
     return ["chiamata", "teoria", lv.type, "furgone", "esito"];
   }
-  const GROUP = { chiamata: "Chiamata", teoria: "Teoria", quadro: "Sicurezza", negozio: "Negozio", fili: "Lavoro", controllo: "Collaudo", scommessa: "Collaudo", collaudo: "Collaudo", indagine: "Indagine", serata: "Serata", furgone: "Furgone", esito: "Furgone" };
+  const GROUP = { chiamata: "Chiamata", teoria: "Teoria", quadro: "Sicurezza", negozio: "Negozio", fili: "Lavoro", controllo: "Collaudo", scommessa: "Collaudo", collaudo: "Collaudo", indagine: "Indagine", serata: "Serata", banco: "Banco", furgone: "Furgone", esito: "Furgone" };
 
   function newRun(lv) {
     const r = { card: 0, wires: [], sel: null, selWire: null, color: "marrone", sec: (lv.palette && lv.palette.defSec) || 1.5, hint: -1, checks: [], bet: null, attempts: 0, col: null, pst: {}, quiz: null, shocked: false, safeStar: false, safMiss: [], shop: null, stars: null, chkIss: [], hist: [], zoom: false, msg: null };
@@ -75,6 +81,7 @@ export function mountGame(app) {
       lv.ser.lines.forEach(l => l.apps.forEach(a => { on[a.id] = !!a.on; }));
       r.ser = { k: 3, on, black: false, overSince: null, bothSince: null, ciabSince: null, hot: false, m: [false, false, false], mi: [null, null, null] };
     }
+    if (lv.type === "guasto") r.bench = newBench(lv, pickFault(lv));
     return r;
   }
   function openLevel(id) { S.screen = "level"; S.lv = id; S.step = "chiamata"; S.run = newRun(LV[id]); render(true); }
@@ -188,7 +195,7 @@ export function mountGame(app) {
     // comandi
     const w = c.kind === "interruttore" ? 96 : c.kind === "deviatore" ? 96 : 140;
     const s = (o.st && o.st[c.id]) || 0;
-    const pw = o.mode === "power";
+    const pw = o.mode === "power" || o.mode === "bench";
     let inner = "";
     const yb = y + 56;
     if (c.kind === "interruttore") {
@@ -227,16 +234,19 @@ export function mountGame(app) {
     const label = slot ? "" : tLabel(c, t);
     const shape = slot ? `<rect class="t" x="${p.x - 6}" y="${p.y - 6}" width="12" height="12" rx="2"/>`
       : `<circle class="t" cx="${p.x}" cy="${p.y}" r="6.5"/><path class="screw" d="M${p.x - 3.4},${p.y} H${p.x + 3.4} M${p.x},${p.y - 3.4} V${p.y + 3.4}"/>`;
-    const attrs = edit ? ` data-t="${id}" role="button" tabindex="0" aria-label="${esc(descTerm(lv, id))}"` : "";
+    const bench = o.mode === "bench", pr = bench && o.probes ? o.probes.indexOf(id) : -1;
+    const attrs = edit ? ` data-t="${id}" role="button" tabindex="0" aria-label="${esc(descTerm(lv, id))}"`
+      : bench ? ` data-act="probeT" data-arg="${id}" role="button" tabindex="0" aria-label="${esc(benchTermName(lv, id, o.wires))}${pr === 0 ? ": puntale rosso" : pr === 1 ? ": puntale nero" : ": appoggia il puntale"}"` : "";
     let lab = "";
     if (label) {
       if (c.kind === "presa") lab = `<text class="tl" x="${p.x}" y="${p.y - 12}" text-anchor="middle">${esc(label)}</text>`;
       else if (c.kind === "lampada") lab = `<text class="tl" x="${p.x}" y="${c.top ? p.y - 17 : p.y + 25}" text-anchor="middle">${esc(label)}</text>`;
       else lab = `<text class="tl" x="${p.x + 10}" y="${p.y + 4}">${esc(label)}</text>`;
     }
-    return `<g class="term${sel ? " sel" : ""}${cand ? " cand" : ""}${slot ? " slot" : ""}${live ? " live" : ""}"${attrs}>
-      ${edit ? `<circle class="hit" cx="${p.x}" cy="${p.y}" r="20"/>` : ""}
-      ${sel ? `<circle class="ring" cx="${p.x}" cy="${p.y}" r="13"/>` : ""}${shape}${lab}</g>`;
+    const probe = pr < 0 ? "" : `<circle class="probe p${pr + 1}" cx="${p.x}" cy="${p.y}" r="12.5"/>`;
+    return `<g class="term${sel ? " sel" : ""}${cand ? " cand" : ""}${slot ? " slot" : ""}${live ? " live" : ""}${bench ? " probeable" : ""}"${attrs}>
+      ${edit || bench ? `<circle class="hit" cx="${p.x}" cy="${p.y}" r="20"/>` : ""}
+      ${sel ? `<circle class="ring" cx="${p.x}" cy="${p.y}" r="13"/>` : ""}${shape}${lab}${probe}</g>`;
   }
   function tipSVG(c, o) {
     const key = "c:" + c.id, sel = o.sel === key, cand = !!(o.cand && o.cand.has(key));
@@ -253,9 +263,10 @@ export function mountGame(app) {
   function boardSVG(lv, wires, o) {
     const b = lv.board, H = b.h;
     const comps = b.comps.filter(c => c.kind !== "sorgente");
-    const ev = o.mode === "power" ? evaluate(lv, wires, o.st || {}) : null;
+    const bench = o.mode === "bench";
+    const ev = bench ? o.ev || null : o.mode === "power" ? evaluate(lv, wires, o.st || {}) : null;
     const trip = !!(ev && (ev.corto || ev.dispersione));
-    const livePot = t => !!(ev && !trip && (ev.potOf(t) || "")[0] === "L");
+    const livePot = t => !bench && !!(ev && !trip && (ev.potOf(t) || "")[0] === "L");
     const edit = o.mode === "edit";
     const capi = comps.filter(k => k.kind === "capo");
     const free = capi.filter(c => !wires.some(w => w.capo && w.a === c.id + ".x"));
@@ -295,7 +306,7 @@ export function mountGame(app) {
     if (S.screen === "home") return "";
     const lv = S.lv ? lvCur() : null;
     const inLevel = S.screen === "level";
-    const title = S.screen === "quaderno" ? "Quaderno" : `${lv.n} · ${lv.title}`;
+    const title = S.screen === "quaderno" ? "Quaderno" : `${lvNum(lv)} · ${lv.title}`;
     const back = S.screen === "quaderno" && S.lv ? `<button class="btn-q icon" data-act="backLevel" aria-label="Torna all'intervento">${ICON.back}</button>` : `<button class="btn-q icon" data-act="home" aria-label="Torna alla mappa">${ICON.back}</button>`;
     return `<header class="bar"><div class="bar-in">${back}<span class="bar-t">${esc(title)}</span>${inLevel ? `<button class="btn-q icon" data-act="quaderno" aria-label="Apri il quaderno">${ICON.book}</button>` : `<span style="width:44px"></span>`}</div>${inLevel ? vSteps(lv) : ""}</header>`;
   }
@@ -307,12 +318,13 @@ export function mountGame(app) {
 
   function vHome() {
     const stars = LEVELS.reduce((s, l) => s + (prog.done[l.id] ? prog.done[l.id].stars.filter(Boolean).length : 0), 0);
-    const nx = nextLevel();
-    const parts = [...new Set(LEVELS.map(l => l.part))];
+    const latest = CHAPTERS[CHAPTERS.length - 1];
+    /* il capitolo della settimana viene prima: si può giocare anche senza aver finito gli altri */
+    const nx = LEVELS.find(l => l.cap === latest.n && !prog.done[l.id]) || nextLevel();
     return `<section class="hero"><h1 class="vh">Fase Neutro Terra</h1>${HERO}
-      <p class="lede">Nove interventi veri, dalla prima lampada al quadro che salta. Prima la fisica che serve, poi le mani sui fili, poi il collaudo.</p>
-      <div class="stats"><span class="stat"><b>${stars}</b>/27 stelle</span><span class="stat"><b>${prog.cards.length}</b> schede</span><span class="stat"><b>${prog.bets.won}</b>/${prog.bets.tot} scommesse vinte</span></div>
-      <div class="row">${nx ? `<button class="btn btn-p" data-act="open" data-arg="${nx.id}">${Object.keys(prog.done).length ? "Continua" : "Comincia"}: ${nx.n} · ${esc(nx.title)}</button>` : `<button class="btn btn-p" data-act="quaderno">Tutto fatto: apri il quaderno</button>`}<button class="btn btn-s" data-act="quaderno">${ICON.book} Quaderno</button></div>
+      <p class="lede">Un capitolo alla settimana. Prima la fisica che serve, poi le mani sui fili, il collaudo e la ricerca dei guasti.</p>
+      <div class="stats"><span class="stat"><b>${stars}</b>/${LEVELS.length * 3} stelle</span><span class="stat"><b>${prog.cards.length}</b> schede</span><span class="stat"><b>${prog.bets.won}</b>/${prog.bets.tot} scommesse vinte</span></div>
+      <div class="row">${nx ? `<button class="btn btn-p" data-act="open" data-arg="${nx.id}">${prog.done[nx.id] || Object.keys(prog.done).some(id => LEVELS.find(l => l.id === id && l.cap === nx.cap)) ? "Continua" : "Comincia"}: ${lvNum(nx)} · ${esc(nx.title)}</button>` : `<button class="btn btn-p" data-act="quaderno">Tutto fatto: apri il quaderno</button>`}<button class="btn btn-s" data-act="quaderno">${ICON.book} Quaderno</button></div>
     </section>
     <details class="how card"><summary>Come si gioca</summary>
       <ol class="olist">
@@ -321,11 +333,12 @@ export function mountGame(app) {
         <li><strong>La sicurezza</strong>: al quadro stacchi, segnali, provi il tester e misuri. Se tocchi un filo in tensione, prendi la scossa.</li>
         <li><strong>I fili</strong>: trascini la punta di rame fino al morsetto, oppure tiri un filo nuovo da un morsetto all'altro. Tocchi un filo per cambiargli colore, sezione o posizione.</li>
         <li><strong>Il collaudo</strong>: prima scommetti su cosa succede, poi ridai tensione. Il simulatore prova tutte le combinazioni.</li>
+        <li><strong>Il banco guasti</strong> (dal capitolo 2): l'impianto è già fatto e c'è un guasto. Accendi e spegni la linea, giri i comandi, appoggi i puntali del tester su due morsetti. Poi dici dov'è il guasto e lo ripari, fuori tensione.</li>
         <li><strong>Il furgone</strong>: tre domande, e una ripassa un intervento vecchio.</li>
       </ol>
       <p class="muted">Ogni intervento vale tre stelle. Le schede di teoria finiscono nel quaderno, insieme al prontuario e al lessico.</p>
     </details>
-    ${parts.map(p => `<section class="parte"><h2 class="eyebrow">${esc(p)}</h2><div class="lvs">${LEVELS.filter(l => l.part === p).map(vLvRow).join("")}</div></section>`).join("")}
+    ${CHAPTERS.slice().reverse().map(vChapter).join("")}
     <p class="fine">È un simulatore. Nell'impianto vero si lavora fuori tensione, accanto a chi ne ha la responsabilità: nuovi punti, modifiche e ampliamenti li esegue un'impresa abilitata, che a fine lavori rilascia la dichiarazione di conformità (DM 37/2008).</p>
     ${S.confirmReset ? `<div class="card confirm"><p><strong>Azzerare tutto?</strong> Cancelli stelle, schede e scommesse su questo dispositivo.</p><div class="row"><button class="btn btn-s danger" data-act="resetYes">Azzera</button><button class="btn btn-s" data-act="resetNo">Annulla</button></div></div>` : ""}
     <div class="row"><button class="btn-q" data-act="free" aria-pressed="${prog.free}">${prog.free ? "Ordine libero attivo: tocca per tornare in ordine" : "Sblocca tutti gli interventi"}</button><button class="btn-q" data-act="resetAsk">Azzera i progressi</button></div>`;
@@ -334,13 +347,23 @@ export function mountGame(app) {
     const ok = unlocked(l), d = prog.done[l.id];
     const st = d ? d.stars : [false, false, false];
     return `<button class="lv${ok ? "" : " locked"}${d ? " done" : ""}" data-act="${ok ? "open" : "locked"}" data-arg="${l.id}">
-      <span class="lv-n">${l.n}</span><span class="lv-t"><b>${esc(l.title)}</b><small>${esc(l.short)}</small></span>
+      <span class="lv-n">${lvNum(l)}</span><span class="lv-t"><b>${esc(l.title)}</b><small>${esc(l.short)}</small></span>
       <span class="lv-s" aria-label="${ok ? st.filter(Boolean).length + " stelle su 3" : "bloccato"}">${ok ? st.map(s => `<i class="${s ? "on" : ""}"></i>`).join("") : ICON.lock}</span></button>`;
   }
 
+  function vChapter(ch) {
+    const lvs = LEVELS.filter(l => l.cap === ch.n);
+    const parts = [...new Set(lvs.map(l => l.part))];
+    const done = lvs.filter(l => prog.done[l.id]).length;
+    const date = new Date(ch.date + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "long" });
+    return `<section class="cap" aria-labelledby="cap-${ch.n}"><div class="cap-h"><p class="eyebrow">Capitolo ${ch.n} · dal ${esc(date)} · ${done}/${lvs.length}</p><h2 class="h2" id="cap-${ch.n}">${esc(ch.title)}</h2><p class="muted">${esc(ch.short)}</p></div>
+      ${parts.map(p => `<section class="parte">${parts.length > 1 || p !== ch.title ? `<h3 class="eyebrow">${esc(p)}</h3>` : ""}<div class="lvs">${lvs.filter(l => l.part === p).map(vLvRow).join("")}</div></section>`).join("")}</section>`;
+  }
+
   function vChiamata(lv) {
-    return `<p class="eyebrow">Intervento ${lv.n} · ${esc(lv.part)}</p><h1 class="h1">${esc(lv.title)}</h1>
-      <div class="msg"><span class="msg-who">${esc(lv.client.who)} · ${esc(lv.client.where)}</span><p>${esc(lv.client.msg)}</p></div>
+    const msg = lv.type === "guasto" ? curFault().msg : lv.client.msg;
+    return `<p class="eyebrow">${lv.type === "guasto" ? "Banco guasti" : "Intervento"} ${lvNum(lv)} · ${esc(lv.part)}</p><h1 class="h1">${esc(lv.title)}</h1>
+      <div class="msg"><span class="msg-who">${esc(lv.client.who)} · ${esc(lv.client.where)}</span><p>${esc(msg)}</p></div>
       <div class="card"><h2 class="h3">Cosa impari</h2><ul class="list">${lv.learn.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
       <div class="row"><button class="btn btn-p" data-act="next">Prima di toccare: la teoria</button></div>`;
   }
@@ -358,7 +381,7 @@ export function mountGame(app) {
     const i = S.run.card, id = lv.cards[i];
     unlockCard(id);
     const last = i === lv.cards.length - 1;
-    const go = lv.type === "fili" ? (lv.shop ? "Al negozio" : lv.safety.type === "spina" ? "Prima di toccare" : "Al quadro") : lv.type === "indagine" ? "Comincia l'indagine" : "Comincia la serata";
+    const go = lv.type === "fili" ? (lv.shop ? "Al negozio" : lv.safety.type === "spina" ? "Prima di toccare" : "Al quadro") : lv.type === "indagine" ? "Comincia l'indagine" : lv.type === "guasto" ? "Al banco" : "Comincia la serata";
     return `<p class="eyebrow">Teoria · scheda ${i + 1} di ${lv.cards.length}</p>${vCard(id, CARDS[id])}
       <div class="row">${i > 0 ? `<button class="btn btn-s" data-act="cardPrev">Indietro</button>` : ""}${last ? `<button class="btn btn-p" data-act="next">${go}</button>` : `<button class="btn btn-p" data-act="cardNext">Avanti</button>`}</div>`;
   }
@@ -896,14 +919,142 @@ export function mountGame(app) {
     if (changed) render();
   }
 
+  /* ---------- banco guasti: l'impianto c'è, qualcosa non va ---------- */
+  function pickFault(lv) {
+    const last = prog.lastFault ? prog.lastFault[lv.id] : null;
+    const ids = lv.faults.map((f, i) => i).filter(i => lv.faults.length < 2 || i !== last);
+    const fi = ids[Math.floor(Math.random() * ids.length)];
+    prog.lastFault = Object.assign({}, prog.lastFault, { [lv.id]: fi });
+    save();
+    return fi;
+  }
+  function newBench(lv, fi) {
+    return { fi, on: false, tripped: null, mode: "V", probes: [], log: [], lastKey: null, measures: 0, unsafe: 0, diagOpen: false, diag: null, firstDiag: null, repaired: false, shock: false, tested: false, order: shuffle(lv.faults.map(f => f.id)) };
+  }
+  const curFault = () => lvCur().faults[S.run.bench.fi];
+  const benchSetup = lv => applyFault(lv, S.run.bench.repaired ? null : lv.faults[S.run.bench.fi]);
+  /* i morsetti a leva si chiamano col colore del filo che ci entra: «il morsetto del blu» */
+  function wagoName(id, wires) {
+    const ws = wires.filter(w => w.a.split(".")[0] === id || w.b.split(".")[0] === id);
+    const w = ws.find(x => x.capo) || ws[0];
+    return w ? `morsetto del ${WIRES[w.color].label}` : "morsetto libero";
+  }
+  function benchTermName(lv, id, wires) {
+    const c = compOf(lv, id), t = id.split(".")[1];
+    if (c.kind === "morsetto") return `${wagoName(c.id, wires || [])}, foro ${t.slice(1)}`;
+    return descTerm(lv, id);
+  }
+  function termShort(lv, id, wires) {
+    const c = compOf(lv, id), t = id.split(".")[1];
+    switch (c.kind) {
+      case "morsetto": return wagoName(c.id, wires);
+      case "presa": return `${compName(c)} ${t === "PE" ? "⏚" : t === "A" ? "sinistro" : "destro"}`;
+      case "lampada": return `${compName(c)} ${t === "PE" ? "⏚" : t}`;
+      case "deviatore": return `${shortName(c)} ${t}`;
+      case "invertitore": return `inv. ${t}`;
+      case "interruttore": return `interr. ${t}`;
+    }
+    return id;
+  }
+  function benchReading(lv) {
+    const b = S.run.bench;
+    if (b.probes.length < 2) return null;
+    const s = benchSetup(lv), [p, q] = b.probes;
+    if (b.mode === "V") return { v: b.on ? readVoltage(s, S.run.pst, p, q) : 0 };
+    if (b.on) return { unsafe: true };
+    return { o: readContinuity(s, S.run.pst, p, q) };
+  }
+  const OHM = { zero: ["0,0", "Ω · suona: è lo stesso filo"], carico: ["38", "Ω · c'è una lampada in mezzo"], aperto: ["OL", "aperto: non passa"] };
+  function readingText(rd) {
+    if (rd.v != null) return `${rd.v} V`;
+    return { zero: "suona, 0 Ω", carico: "38 Ω, c'è una lampada in mezzo", aperto: "OL, aperto" }[rd.o];
+  }
+  function swText(lv) {
+    const sw = lv.board.comps.filter(c => ["interruttore", "deviatore", "invertitore"].includes(c.kind));
+    return sw.length ? " · " + sw.map(c => `${shortName(c).toLowerCase()} ${swState(c, S.run.pst[c.id] || 0)}`).join(", ") : "";
+  }
+  /* ogni coppia di puntali con un risultato nuovo è una misura, e finisce nel registro */
+  function logMeasure(lv) {
+    const b = S.run.bench;
+    if (b.probes.length < 2) return;
+    const key = [b.mode, b.probes[0], b.probes[1], JSON.stringify(S.run.pst), b.on, b.repaired].join("|");
+    if (key === b.lastKey) return;
+    b.lastKey = key;
+    const rd = benchReading(lv), wires = benchSetup(lv).visible;
+    if (rd.unsafe) { b.unsafe++; b.log.push({ t: "Continuità con la linea accesa: la misura non vale, e il tester rischia. Prima spegni la linea.", k: "bad" }); return; }
+    const blind = b.mode === "V" && !b.on;
+    if (!(b.diag && b.diag.ok) && !blind) b.measures++;
+    b.log.push({ t: `${b.mode === "V" ? "V~" : "Ω"} · ${termShort(lv, b.probes[0], wires)} – ${termShort(lv, b.probes[1], wires)}${swText(lv)}${b.mode === "V" && !b.on ? " · linea spenta" : ""} → ${readingText(rd)}`, k: "" });
+  }
+  function benchPower(lv, on) {
+    const b = S.run.bench;
+    if (!on) { b.on = false; return; }
+    const t = powerCheck(benchSetup(lv), S.run.pst);
+    if (t) { b.on = false; b.tripped = t; b.log.push({ t: `Ridai tensione: scatta ${t === "corto" ? "il magnetotermico, c'è un corto" : "il differenziale"}.`, k: "bad" }); return; }
+    b.on = true; b.tripped = null;
+    if (b.repaired) b.tested = true;
+  }
+  const lineBreaker = lv => { const w = lv.line.split(" "); return { id: "line", label: w.slice(0, -1).join(" "), sub: w[w.length - 1] }; };
+  function benchStatus(lv, ev) {
+    const b = S.run.bench, g = lv.goal;
+    const line = b.tripped ? "La protezione è scattata" : b.on ? "Linea accesa" : "Linea spenta";
+    if (g.type !== "lamp") return `${line}. Una presa non ti dice niente da sola: misura.`;
+    return `${line}. Luce ${ev && ev.lamps[g.lamp].on ? "accesa" : "spenta"}.`;
+  }
+  function vMeter(lv) {
+    const b = S.run.bench, rd = benchReading(lv), wires = benchSetup(lv).visible;
+    let big = "– – –", small = b.mode === "V" ? "V~ · tensione" : "Ω · continuità";
+    if (rd) {
+      if (rd.unsafe) { big = "!"; small = "linea accesa: spegnila prima"; }
+      else if (rd.v != null) { big = String(rd.v); small = "V~" + (b.on ? "" : " · linea spenta"); }
+      else [big, small] = OHM[rd.o];
+    }
+    const p1 = b.probes[0] ? termShort(lv, b.probes[0], wires) : "tocca un morsetto";
+    const p2 = b.probes[1] ? termShort(lv, b.probes[1], wires) : b.probes[0] ? "tocca il secondo" : "–";
+    return `<section id="sheet" class="sheet meter" aria-label="Tester">
+      <div class="mrow"><div class="lcd sm" aria-live="polite"><span>${esc(big)}</span><small>${esc(small)}</small></div>
+      <div class="mcol"><div class="seg" role="group" aria-label="Cosa misura il tester"><button data-act="meterMode" data-arg="V" aria-pressed="${b.mode === "V"}">Tensione</button><button data-act="meterMode" data-arg="ohm" aria-pressed="${b.mode === "ohm"}">Continuità</button></div>
+      <p class="plab"><span><i class="pdot p1"></i>${esc(p1)}</span><span><i class="pdot p2"></i>${esc(p2)}${b.probes.length ? ` <button class="btn-q" data-act="probesOff">Togli</button>` : ""}</span></p></div></div></section>`;
+  }
+  function vBanco(lv) {
+    const r = S.run, b = r.bench, f = curFault(), s = benchSetup(lv);
+    const ev = b.on ? evaluate(s.lv, s.actual, r.pst, { broken: s.broken }) : null;
+    const found = !!(b.diag && b.diag.ok);
+    const hasSw = lv.board.comps.some(c => ["interruttore", "deviatore", "invertitore"].includes(c.kind));
+    let tail = "";
+    if (!found) {
+      tail = `<section class="card" id="diag"><h2 class="h3">Il guasto</h2>
+        ${b.diag && !b.diag.ok ? `<div class="res warn" id="diagres"><h2>Non torna.</h2><p>Le misure non dicono questo. Torna a misurare: dove c'è tensione a un capo di un collegamento e non all'altro, il guasto è lì in mezzo.</p></div>` : ""}
+        ${b.diagOpen ? `<p class="muted">Il guasto è…</p><div class="opts">${b.order.map(id => { const x = lv.faults.find(k => k.id === id); const tried = b.diag && b.diag.id === id; return `<button class="opt${tried ? " bad" : ""}" data-act="diagPick" data-arg="${id}">${esc(x.label)}</button>`; }).join("")}</div>`
+          : `<p class="muted">Quando le misure ti dicono dov'è, scegli la diagnosi. Se sbagli puoi riprovare, ma la stella della diagnosi va al primo colpo.</p><div class="row"><button class="btn btn-p" data-act="diagOpen">Ho trovato il guasto</button></div>`}</section>`;
+    } else if (!b.repaired) {
+      tail = `<div class="res ok" id="diagres"><span class="eyebrow">Diagnosi</span><h2>${esc(f.label)}.</h2><p>${esc(f.proof)}</p></div>
+        <section class="card"><h2 class="h3">Riparazione</h2><p>Si ripara ${esc(f.where)}. Prima di mettere le mani: linea spenta al quadro.</p><div class="row"><button class="btn btn-p" data-act="repair">Ripara</button></div></section>`;
+    } else {
+      const col = collaudo(lv, healthyWires(lv));
+      tail = b.tested && b.on ? `<div class="res ok"><span class="eyebrow">Collaudo</span><h2>${col.funziona ? "Funziona." : "Ancora qualcosa non va."}</h2><p>${hasSw ? "Gira i comandi: ora la luce risponde in tutte le posizioni." : "Ora la presa dà 230 V tra i due laterali e la terra c'è."}</p></div><div class="row"><button class="btn btn-p" data-act="next">Domande dal furgone</button></div>`
+        : `<div class="res ok"><span class="eyebrow">Riparato</span><h2>Fatto: ${esc(f.where)}.</h2><p>Ora ridai tensione e prova.</p></div>`;
+    }
+    return `<p class="eyebrow">Banco guasti · ${b.repaired ? "riparato" : found ? "trovato" : "trova il guasto"}</p><h1 class="h2">${esc(lv.short)}</h1>
+      <div class="msg"><span class="msg-who">${esc(lv.client.who)} · ${esc(lv.client.where)}</span><p>${esc(f.msg)}</p></div>
+      <p class="muted">La leva accende e spegne la linea${hasSw ? "; i comandi si girano toccandoli" : ""}. Per misurare tocca due morsetti: il primo è il puntale rosso, il secondo il nero (un altro tocco sposta il nero).</p>
+      ${lv.note ? `<p class="note-txt">${esc(lv.note)}</p>` : ""}
+      ${b.shock ? shockHTML : ""}
+      <div class="quadro bench-q">${vRail([lineBreaker(lv)], { line: b.on ? 1 : 0 }, "lineTog", b.tripped ? "line" : null)}<p class="status" aria-live="polite">${esc(benchStatus(lv, ev))}</p></div>
+      <div class="board">${boardSVG(lv, s.visible, { mode: "bench", st: r.pst, probes: b.probes, ev, wires: s.visible })}</div>
+      <section class="card"><h2 class="h3">Registro delle misure</h2>${b.log.length ? vLog(b.log.slice(-12)) : `<p class="muted">Ancora nessuna misura.</p>`}
+        <div class="row"><button class="btn-q" data-act="hint">Suggerimento</button></div>${r.hint >= 0 ? `<div class="capo"><span class="eyebrow">Il capo dice</span><p>${esc(lv.hints[r.hint])}</p></div>` : ""}</section>
+      ${tail}${vMeter(lv)}`;
+  }
+
   /* furgone ed esito */
   function makeQuiz(lv) {
-    const cur = shuffle(lv.quiz).map(q => ({ q, from: lv.n }));
+    const cur = shuffle(lv.quiz).map(q => ({ q, from: lvNum(lv) }));
     const prev = LEVELS.filter(l => l.n < lv.n && prog.done[l.id]);
     let items = cur.slice(0, 3);
     if (prev.length) {
       const pl = prev[Math.floor(Math.random() * prev.length)];
-      items = [cur[0], cur[1], { q: pl.quiz[Math.floor(Math.random() * pl.quiz.length)], from: pl.n, review: true }];
+      items = [cur[0], cur[1], { q: pl.quiz[Math.floor(Math.random() * pl.quiz.length)], from: lvNum(pl), review: true }];
     }
     return { items, i: 0, ans: null, score: 0 };
   }
@@ -924,6 +1075,7 @@ export function mountGame(app) {
       return [!!r.safeStar, regola, !!r.firstOk];
     }
     if (lv.type === "indagine") { const s = r.ind; return [s.trips <= 3, s.chi === "lavat", !!(s.cosa != null && lv.ind.cosa[s.cosa].ok)]; }
+    if (lv.type === "guasto") { const b = r.bench, f = lv.faults[b.fi]; return [!b.unsafe && !r.shocked, b.measures <= f.minMeasures + 3, b.firstDiag === true]; }
     return r.ser.m.slice();
   }
   function starWhy(lv, st) {
@@ -939,6 +1091,14 @@ export function mountGame(app) {
       const s = r.ind;
       return [st[0] ? `Ci sono voluti ${s.trips} scatti.` : `${s.trips} scatti: col metodo uno alla volta ne bastano due o tre.`, st[1] ? "Era la lavatrice." : "Il colpevole era la lavatrice.", st[2] ? "La protezione è rimasta al suo posto." : "La protezione non si tocca: si ripara l'apparecchio."];
     }
+    if (lv.type === "guasto") {
+      const b = r.bench, f = lv.faults[b.fi], n = b.measures;
+      return [
+        st[0] ? "Continuità a linea spenta, riparazione fuori tensione." : r.shocked ? "Hai messo le mani sui fili con la linea accesa." : "Hai misurato la continuità con la linea accesa.",
+        st[1] ? `${n} ${n === 1 ? "misura" : "misure"}: col metodo si va dritti al punto.` : `${n} misure. Con il metodo ne bastano circa ${f.minMeasures + 1}.`,
+        st[2] ? "Diagnosi giusta al primo colpo." : "La prima diagnosi era sbagliata: prima di dirlo, misura ai due capi.",
+      ];
+    }
     return MIS.map((m, i) => (st[i] ? "Fatto." : "Non completata: puoi rigiocare."));
   }
   function vEsito(lv) {
@@ -952,11 +1112,11 @@ export function mountGame(app) {
     const why = starWhy(lv, r.stars);
     const nx = LEVELS[lv.n];
     const words = lv.cards.flatMap(id => CARDS[id].g || []);
-    return `<p class="eyebrow">Intervento ${lv.n} concluso</p><h1 class="h1">${esc(lv.title)}</h1>
+    return `<p class="eyebrow">${lv.type === "guasto" ? "Banco guasti" : "Intervento"} ${lvNum(lv)} concluso</p><h1 class="h1">${esc(lv.title)}</h1>
       <div class="stars">${lv.stars.map((name, i) => `<div class="star${r.stars[i] ? " on" : ""}"><span class="dot" aria-hidden="true"></span><b>${esc(name)}</b><span>${esc(why[i])}</span><span class="vh">${r.stars[i] ? "stella presa" : "stella non presa"}</span></div>`).join("")}</div>
       ${r.quiz ? `<p class="muted">Domande dal furgone: ${r.quiz.score} giuste su ${r.quiz.items.length}.</p>` : ""}
       ${words.length ? `<section class="card"><h2 class="h3">Parole nuove</h2><table class="gergo"><thead><tr><th>Tecnico</th><th>In cantiere</th></tr></thead><tbody>${words.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join("")}</tbody></table></section>` : ""}
-      <div class="row">${nx ? `<button class="btn btn-p" data-act="open" data-arg="${nx.id}">Prossimo: ${nx.n} · ${esc(nx.title)}</button>` : `<button class="btn btn-p" data-act="quaderno">Apri il quaderno</button>`}<button class="btn btn-s" data-act="retry">Rigioca</button><button class="btn btn-s" data-act="home">Mappa</button></div>`;
+      <div class="row">${nx ? `<button class="btn btn-p" data-act="open" data-arg="${nx.id}">Prossimo: ${lvNum(nx)} · ${esc(nx.title)}</button>` : `<button class="btn btn-p" data-act="quaderno">Apri il quaderno</button>`}<button class="btn btn-s" data-act="retry">${lv.type === "guasto" ? "Un altro guasto" : "Rigioca"}</button><button class="btn btn-s" data-act="home">Mappa</button></div>`;
   }
 
   /* quaderno */
@@ -972,7 +1132,7 @@ export function mountGame(app) {
     } else {
       body = LEVELS.map(l => {
         const have = l.cards.filter(id => prog.cards.includes(id));
-        return `<section class="parte"><h2 class="eyebrow">${l.n} · ${esc(l.title)}</h2>${have.length ? have.map(id => `<details class="acc"><summary>${esc(CARDS[id].t)}</summary>${vCard(id, Object.assign({}, CARDS[id], { t: "" }))}</details>`).join("") : `<p class="locked-note">Le schede arrivano quando giochi l'intervento.</p>`}</section>`;
+        return `<section class="parte"><h2 class="eyebrow">${lvNum(l)} · ${esc(l.title)}</h2>${have.length ? have.map(id => `<details class="acc"><summary>${esc(CARDS[id].t)}</summary>${vCard(id, Object.assign({}, CARDS[id], { t: "" }))}</details>`).join("") : `<p class="locked-note">Le schede arrivano quando giochi l'intervento.</p>`}</section>`;
       }).join("");
     }
     return `<h1 class="h1">Quaderno</h1><div class="tabs" role="group" aria-label="Sezioni del quaderno">${tabs.map(([k, t]) => `<button data-act="qtab" data-arg="${k}" aria-pressed="${S.qtab === k}">${t}</button>`).join("")}</div>${body}`;
@@ -993,6 +1153,7 @@ export function mountGame(app) {
       case "collaudo": return vCollaudo(lv);
       case "indagine": return vIndagine(lv);
       case "serata": return vSerata(lv);
+      case "banco": return vBanco(lv);
       case "furgone": return vFurgone(lv);
       case "esito": return vEsito(lv);
     }
@@ -1170,11 +1331,11 @@ export function mountGame(app) {
     quaderno() { S.screen = "quaderno"; render(true); },
     backLevel() { S.screen = "level"; render(true); },
     open(id) { openLevel(id); },
-    locked() { toast("Prima finisci l'intervento precedente, oppure sblocca tutti in fondo alla pagina."); },
+    locked() { toast("Prima finisci l'intervento precedente di questo capitolo, oppure sblocca tutti in fondo alla pagina."); },
     next() { nextStep(); },
     toFili() { const r = S.run; r.sel = null; r.selWire = null; r.msg = null; goStep("fili"); },
-    cardNext() { S.run.card++; render(true); },
-    cardPrev() { S.run.card--; render(true); },
+    cardNext() { if (S.run.card < lvCur().cards.length - 1) S.run.card++; render(true); },
+    cardPrev() { if (S.run.card > 0) S.run.card--; render(true); },
     brk(id) { const s = S.run.saf; s.br[id] = s.br[id] ? 0 : 1; s.meas = {}; s.reading = null; s.lastProbe = null; render(); },
     wall() { const s = S.run.saf; s.wall = s.wall ? 0 : 1; s.meas = {}; s.reading = null; s.lastProbe = null; render(); },
     tag() { S.run.saf.tag = !S.run.saf.tag; render(); },
@@ -1229,7 +1390,48 @@ export function mountGame(app) {
     chk(i) { const r = S.run; i = +i; r.checks = r.checks.includes(i) ? r.checks.filter(x => x !== i) : r.checks.concat(i); render(); },
     bet(k) { S.run.bet = k; render(); },
     power() { doPower(lvCur()); },
-    toggleSw(id) { const r = S.run; r.pst[id] = r.pst[id] ? 0 : 1; render(); },
+    toggleSw(id) {
+      const r = S.run;
+      r.pst[id] = r.pst[id] ? 0 : 1;
+      if (S.step === "banco") {
+        const lv = lvCur(), b = r.bench;
+        if (b.on) { const t = powerCheck(benchSetup(lv), r.pst); if (t) { b.on = false; b.tripped = t; b.log.push({ t: `Giri il comando: scatta ${t === "corto" ? "il magnetotermico" : "il differenziale"}.`, k: "bad" }); } }
+        logMeasure(lv);
+      }
+      render();
+    },
+    /* banco guasti */
+    setFault(i) { const lv = lvCur(); S.run.bench = newBench(lv, +i); S.run.pst = {}; render(); },
+    lineTog() { const lv = lvCur(); benchPower(lv, !S.run.bench.on); logMeasure(lv); render(); },
+    lineOn() { const lv = lvCur(); benchPower(lv, true); logMeasure(lv); render(); },
+    lineOff() { const lv = lvCur(); benchPower(lv, false); logMeasure(lv); render(); },
+    meterMode(m) { const lv = lvCur(); S.run.bench.mode = m === "ohm" ? "ohm" : "V"; logMeasure(lv); render(); },
+    probesOff() { const b = S.run.bench; b.probes = []; b.lastKey = null; render(); },
+    probeT(id) {
+      const lv = lvCur(), b = S.run.bench;
+      if (b.probes[0] === id) b.probes = [];
+      else if (b.probes[1] === id) b.probes = [b.probes[0]];
+      else if (b.probes.length < 2) b.probes.push(id);
+      else b.probes = [b.probes[0], id];
+      logMeasure(lv);
+      render();
+    },
+    diagOpen() { S.run.bench.diagOpen = true; render(); scrollToId("diag"); },
+    diagPick(id) {
+      const b = S.run.bench, ok = id === curFault().id;
+      if (b.firstDiag == null) b.firstDiag = ok;
+      b.diag = { id, ok };
+      b.diagOpen = !ok;
+      render();
+      scrollToId("diagres");
+    },
+    repair() {
+      const r = S.run, b = r.bench;
+      if (b.on) { b.shock = true; r.shocked = true; render(); scrollToId("shock"); return; }
+      b.repaired = true; b.shock = false; b.probes = []; b.lastKey = null;
+      b.log.push({ t: `Riparato: ${curFault().where}.`, k: "good" });
+      render();
+    },
     ans(i) { const q = S.run.quiz; if (q.ans != null) return; q.ans = +i; if (q.ans === q.items[q.i].q.ok) q.score++; render(); },
     qnext() { const q = S.run.quiz; if (q.i < q.items.length - 1) { q.i++; q.ans = null; render(true); } else nextStep(); },
     free() { prog.free = !prog.free; save(); render(); },
@@ -1386,5 +1588,5 @@ export function mountGame(app) {
   const hot = window.claude && window.claude.hot;
   try { if (hot && hot.snapshot) hot.snapshot(() => ({ S: JSON.parse(JSON.stringify(S, (k, v) => (typeof v === "function" ? undefined : v))) })); } catch (e) { /* ignora */ }
   if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
-  window.__fnt = { ACTS, get S() { return S; }, render, LABS, LEVELS, CARDS };
+  window.__fnt = { ACTS, get S() { return S; }, render, LABS, LEVELS, CARDS, probePoints };
 }

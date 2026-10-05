@@ -8,6 +8,8 @@ import { RULES } from "./rules";
 import type { Fault, GuastoLevel, Symptom, Wire } from "./types";
 
 export interface FaultSetup {
+  /** il livello come è davvero: i collegamenti fissi interrotti non ci sono */
+  lv: GuastoLevel;
   /** collegamenti come si vedono sulla tavola */
   visible: Wire[];
   /** collegamenti come sono davvero */
@@ -33,14 +35,22 @@ export function applyFault(lv: GuastoLevel, f: Fault | null): FaultSetup {
     else visible[i] = { ...visible[i], a: r.to[0], b: r.to[1] };
   }
   const actual = visible.map(w => ({ ...w }));
+  let fixed = lv.board.fixed || [];
   for (const o of f?.open || []) {
     const i = actual.findIndex(w => sameLink(w, o));
-    if (i < 0) errors.push(`open: nessun collegamento ${o.join(" → ")}`);
-    else actual.splice(i, 1);
+    if (i >= 0) {
+      actual.splice(i, 1);
+      continue;
+    }
+    // anche un collegamento già fatto (un filo che arriva dal quadro) può non fare contatto
+    const k = fixed.findIndex(w => sameLink(w, o));
+    if (k < 0) errors.push(`open: nessun collegamento ${o.join(" → ")}`);
+    else fixed = fixed.filter((_, j) => j !== k);
   }
   const broken = new Set(f?.broken || []);
   for (const id of broken) if (!lv.board.comps.some(c => c.id === id)) errors.push(`broken: il pezzo «${id}» non esiste`);
-  return { visible, actual, broken, errors };
+  const real = fixed === lv.board.fixed ? lv : { ...lv, board: { ...lv.board, fixed } };
+  return { lv: real, visible, actual, broken, errors };
 }
 
 /** I punti dove si possono appoggiare i puntali. */
@@ -61,14 +71,14 @@ export interface PowerState {
 }
 
 /** Cosa succede dando tensione in questa posizione dei comandi. */
-export function powerCheck(lv: GuastoLevel, s: FaultSetup, st: SwitchStates): PowerState["tripped"] {
-  const ev = evaluate(lv, s.actual, st, { broken: s.broken });
+export function powerCheck(s: FaultSetup, st: SwitchStates): PowerState["tripped"] {
+  const ev = evaluate(s.lv, s.actual, st, { broken: s.broken });
   return ev.corto ? "corto" : ev.dispersione ? "diff" : null;
 }
 
 /** Tensione tra due punti, con la linea accesa: 230 o 0. */
-export function readVoltage(lv: GuastoLevel, s: FaultSetup, st: SwitchStates, a: string, b: string): number {
-  const ev = evaluate(lv, s.actual, st, { broken: s.broken });
+export function readVoltage(s: FaultSetup, st: SwitchStates, a: string, b: string): number {
+  const ev = evaluate(s.lv, s.actual, st, { broken: s.broken });
   if (ev.corto || ev.dispersione) return 0;
   const pa = ev.potOf(a),
     pb = ev.potOf(b);
@@ -82,7 +92,8 @@ export function readVoltage(lv: GuastoLevel, s: FaultSetup, st: SwitchStates, a:
 export type Continuity = "zero" | "carico" | "aperto";
 
 /** Continuità tra due punti, con la linea spenta: stesso filo, attraverso una lampada, o niente. */
-export function readContinuity(lv: GuastoLevel, s: FaultSetup, st: SwitchStates, a: string, b: string): Continuity {
+export function readContinuity(s: FaultSetup, st: SwitchStates, a: string, b: string): Continuity {
+  const lv = s.lv;
   const uf = buildNets(lv, s.actual, st, { broken: s.broken });
   const na = uf.find(a),
     nb = uf.find(b);
@@ -113,7 +124,8 @@ export function readContinuity(lv: GuastoLevel, s: FaultSetup, st: SwitchStates,
 }
 
 /** Il sintomo che vede il cliente. */
-export function symptomOf(lv: GuastoLevel, s: FaultSetup): Symptom {
+export function symptomOf(s: FaultSetup): Symptom {
+  const lv = s.lv;
   const sw = switchesOf(lv);
   const states = allStates(sw);
   const evs = states.map(st => evaluate(lv, s.actual, st, { broken: s.broken }));
@@ -128,27 +140,28 @@ export function symptomOf(lv: GuastoLevel, s: FaultSetup): Symptom {
 }
 
 /** Tutte le misure possibili, come testo: due guasti con la stessa firma non si distinguono. */
-export function signature(lv: GuastoLevel, s: FaultSetup): Map<string, string> {
+export function signature(s: FaultSetup): Map<string, string> {
+  const lv = s.lv;
   const pts = probePoints(lv);
   const sig = new Map<string, string>();
   sig.set("vista", s.visible.map(w => [w.a, w.b].sort().join("~")).sort().join(" "));
   for (const st of allStates(switchesOf(lv))) {
     const k = JSON.stringify(st);
-    sig.set(`luce ${k}`, symptomRow(lv, s, st));
+    sig.set(`luce ${k}`, symptomRow(s, st));
     for (let i = 0; i < pts.length; i++)
       for (let j = i + 1; j < pts.length; j++) {
-        sig.set(`V ${pts[i]} ${pts[j]} ${k}`, String(readVoltage(lv, s, st, pts[i], pts[j])));
-        sig.set(`Ω ${pts[i]} ${pts[j]} ${k}`, readContinuity(lv, s, st, pts[i], pts[j]));
+        sig.set(`V ${pts[i]} ${pts[j]} ${k}`, String(readVoltage(s, st, pts[i], pts[j])));
+        sig.set(`Ω ${pts[i]} ${pts[j]} ${k}`, readContinuity(s, st, pts[i], pts[j]));
       }
   }
   return sig;
 }
 
-function symptomRow(lv: GuastoLevel, s: FaultSetup, st: SwitchStates): string {
-  const ev = evaluate(lv, s.actual, st, { broken: s.broken });
+function symptomRow(s: FaultSetup, st: SwitchStates): string {
+  const ev = evaluate(s.lv, s.actual, st, { broken: s.broken });
   if (ev.corto) return "corto";
   if (ev.dispersione) return "diff";
-  const g = lv.goal;
+  const g = s.lv.goal;
   return g.type === "lamp" ? (ev.lamps[g.lamp].on ? "accesa" : "spenta") : g.prese.map(id => (ev.sockets[id].ok ? "1" : "0")).join("");
 }
 
@@ -163,9 +176,10 @@ function diffKeys(a: Map<string, string>, b: Map<string, string>): string[] {
  * Quante misure servono, al minimo, per riconoscere il guasto tra gli altri del livello
  * (copertura golosa: ogni misura scelta esclude più guasti possibile).
  */
-export function measuresNeeded(sigs: Map<string, Map<string, string>>, id: string): number {
+export function measuresNeeded(sigs: Map<string, Map<string, string>>, id: string, lampGoal = true): number {
   const me = sigs.get(id)!;
-  const seen = (k: string) => k === "vista" || k.startsWith("luce "); // si vede senza tester
+  // si vede senza tester: i collegamenti sulla tavola e, se c'è, la lampada accesa o spenta
+  const seen = (k: string) => k === "vista" || (lampGoal && k.startsWith("luce "));
   // prima si esclude quello che si vede guardando la tavola e provando i comandi
   const left = new Set([...sigs.keys()].filter(k => k !== id && !diffKeys(me, sigs.get(k)!).some(seen)));
   let n = 0;
@@ -203,17 +217,17 @@ export function checkFaults(lv: GuastoLevel): FaultFinding[] {
   const labels = new Set<string>();
 
   const sigs = new Map<string, Map<string, string>>();
-  sigs.set("sano", signature(lv, healthy));
+  sigs.set("sano", signature(healthy));
   for (const f of lv.faults) {
     const s = applyFault(lv, f);
     s.errors.forEach(e => add("S15", `guasto «${f.id}»: ${e}`));
     if (labels.has(f.label)) add("S17", `due guasti con la stessa diagnosi: «${f.label}»`);
     labels.add(f.label);
     /* S15 · il sintomo dichiarato è quello che succede davvero */
-    const sym = symptomOf(lv, s);
+    const sym = symptomOf(s);
     if (sym !== f.symptom) add("S15", `guasto «${f.id}»: dichiara il sintomo «${f.symptom}», ma l'impianto fa «${sym}»`);
     if (!f.proof || !f.where || !f.msg) add("S17", `guasto «${f.id}»: servono where, msg e proof`);
-    sigs.set(f.id, signature(lv, s));
+    sigs.set(f.id, signature(s));
   }
   /* S16 · ogni guasto si distingue misurando dagli altri e dall'impianto sano */
   const ids = [...sigs.keys()];
@@ -222,7 +236,7 @@ export function checkFaults(lv: GuastoLevel): FaultFinding[] {
       if (!diffKeys(sigs.get(ids[i])!, sigs.get(ids[j])!).length) add("S16", `«${ids[i]}» e «${ids[j]}» danno le stesse misure: non si possono distinguere`);
     }
   for (const f of lv.faults) {
-    const n = measuresNeeded(sigs, f.id);
+    const n = measuresNeeded(sigs, f.id, lv.goal.type === "lamp");
     if (!Number.isFinite(n)) continue;
     if (f.minMeasures < n) add("S16", `guasto «${f.id}»: minMeasures ${f.minMeasures}, ma ne servono almeno ${n}`, "avviso");
   }
