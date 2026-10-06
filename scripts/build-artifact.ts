@@ -1,37 +1,58 @@
-/* Monta il gioco in un solo file HTML (dist/fase-neutro-terra.html): stessi sorgenti del sito,
-   impacchettati con esbuild. Serve per l'anteprima su claude.ai e per le prove alla cieca. */
+/* Monta ogni corso in un solo file HTML: stessi sorgenti del sito, impacchettati con esbuild.
+   dist/fase-neutro-terra.html (elettricista) e dist/sfera-cilindro-asse.html (ottica).
+   Servono per l'anteprima su claude.ai e per le prove alla cieca. */
 import { build } from "esbuild";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const out = join(root, "dist", "fase-neutro-terra.html");
-
-const js = await build({
-  entryPoints: [join(root, "src/game/standalone.ts")],
-  bundle: true,
-  format: "iife",
-  target: "es2020",
-  minify: true,
-  legalComments: "none",
-  write: false,
-});
-const css = readFileSync(join(root, "src/app/globals.css"), "utf8");
 const fonts = "https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap";
 
-const html = `<title>Fase Neutro Terra</title>
-<meta name="description" content="Il gioco per imparare l'impianto elettrico di casa: teoria, quadro, fili, collaudo e ricerca guasti.">
+const COURSES = [
+  {
+    out: "fase-neutro-terra.html",
+    entry: "src/game/standalone.ts",
+    css: ["src/app/globals.css"],
+    title: "Fase Neutro Terra",
+    desc: "Il gioco per imparare l'impianto elettrico di casa: teoria, quadro, fili, collaudo e ricerca guasti.",
+    appClass: "",
+  },
+  {
+    out: "sfera-cilindro-asse.html",
+    entry: "src/ottica/standalone.ts",
+    css: ["src/app/globals.css", "src/app/ottica.css"],
+    title: "Sfera Cilindro Asse",
+    desc: "Il corso per stare al banco di un negozio di ottica: come vede l'occhio, cosa correggono le lenti, e i clienti.",
+    appClass: "ott",
+  },
+];
+
+for (const c of COURSES) {
+  const js = await build({
+    entryPoints: [join(root, c.entry)],
+    bundle: true,
+    format: "iife",
+    target: "es2020",
+    minify: true,
+    legalComments: "none",
+    write: false,
+  });
+  const css = c.css.map(f => readFileSync(join(root, f), "utf8")).join("\n");
+  const html = `<title>${c.title}</title>
+<meta name="description" content="${c.desc}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${fonts}">
 <style>
 ${css}</style>
-<div id="app"></div>
+<div id="app"${c.appClass ? ` class="${c.appClass}"` : ""}></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script>
 ${js.outputFiles[0].text}</script>
 `;
-mkdirSync(dirname(out), { recursive: true });
-writeFileSync(out, html);
-console.log(`${out}: ${(html.length / 1024).toFixed(1)} KB`);
+  const out = join(root, "dist", c.out);
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, html);
+  console.log(`${out}: ${(html.length / 1024).toFixed(1)} KB`);
+}

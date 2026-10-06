@@ -1,0 +1,152 @@
+/* Corso di ottica: stessi mattoni del gioco dell'elettricista (globals.css), con il suo colore e i suoi disegni.
+   Tutto sta sotto .ott, così non tocca l'altro corso. */
+.ott {
+  --accent: #0b6b70; --accent-ink: #ffffff; --accent-soft: #dcefee;
+  --o1: #0b6b70; --o2: #b8730c; --o3: #6a4fb0;
+  --o-ray: #d9822b; --o-ray2: #6a4fb0; --o-retina: #c2414b; --o-iris: #3f6d8f; --o-lens: rgba(120, 170, 200, .28); --o-lens-edge: #5d8fae;
+  --o-spot: rgba(194, 65, 75, .45); --o-zone: rgba(45, 122, 71, .30);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ott {
+    --accent: #5cc6c9; --accent-ink: #062627; --accent-soft: #15302f;
+    --o1: #5cc6c9; --o2: #f0b35a; --o3: #a993e6;
+    --o-ray: #f0a35a; --o-ray2: #a993e6; --o-retina: #f07a83; --o-iris: #7fb0d4; --o-lens: rgba(120, 170, 200, .22); --o-lens-edge: #8cbdd9;
+    --o-spot: rgba(240, 122, 131, .45); --o-zone: rgba(108, 197, 138, .32);
+  }
+}
+:root[data-theme="dark"] .ott {
+  --accent: #5cc6c9; --accent-ink: #062627; --accent-soft: #15302f;
+  --o1: #5cc6c9; --o2: #f0b35a; --o3: #a993e6;
+  --o-ray: #f0a35a; --o-ray2: #a993e6; --o-retina: #f07a83; --o-iris: #7fb0d4; --o-lens: rgba(120, 170, 200, .22); --o-lens-edge: #8cbdd9;
+  --o-spot: rgba(240, 122, 131, .45); --o-zone: rgba(108, 197, 138, .32);
+}
+
+/* copertina */
+.ott .ht { font-size: 38px; }
+.ott .hr { fill: none; stroke: var(--o-ray); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 220; animation: draw2 1s cubic-bezier(.2, .7, .2, 1) both; }
+.ott .hr.r1 { stroke: var(--o1); } .ott .hr.r2 { stroke: var(--o2); } .ott .hr.r3 { stroke: var(--o3); }
+.ott .h-lens { fill: var(--o-lens); stroke: var(--o-lens-edge); stroke-width: 2; }
+.ott .h-dot { fill: var(--ink); }
+@keyframes draw2 { from { stroke-dashoffset: 220; } }
+
+/* scene, occhio, lente */
+.ott .scene { display: block; width: 100%; height: auto; max-width: 480px; margin-inline: auto; border-radius: 8px; box-shadow: 0 0 0 1px var(--line); }
+.ott .eye, .ott .tabo, .ott .prog, .ott .ruler { display: block; width: 100%; height: auto; max-width: 440px; margin-inline: auto; }
+.ott .eye-ball { fill: var(--card); stroke: var(--ink); stroke-width: 1.6; }
+.ott .eye-cornea { fill: var(--o-lens); stroke: var(--o-lens-edge); stroke-width: 2; }
+.ott .eye-iris { stroke: var(--o-iris); stroke-width: 6; stroke-linecap: round; }
+.ott .eye-lens { fill: var(--o-lens); stroke: var(--o-lens-edge); stroke-width: 1.6; transition: rx .25s; }
+.ott .eye-retina { fill: none; stroke: var(--o-retina); stroke-width: 4; stroke-linecap: round; }
+.ott .eye-nerve { fill: var(--sunk); stroke: var(--muted); stroke-width: 1.2; }
+.ott .tlens { fill: var(--o-lens); stroke: var(--o-lens-edge); stroke-width: 1.6; }
+.ott .obj { fill: var(--sunk); stroke: var(--ink); stroke-width: 1.4; }
+.ott .ray { fill: none; stroke: var(--o-ray); stroke-width: 1.6; stroke-linejoin: round; }
+.ott .ray.ray2 { stroke: var(--o-ray2); stroke-dasharray: 5 3; }
+.ott .ray.virt { stroke-dasharray: 2 4; opacity: .8; }
+.ott .focus { fill: var(--o-ray); }
+.ott .focus.f2 { fill: var(--o-ray2); }
+.ott .spot { stroke: var(--o-spot); stroke-width: 7; stroke-linecap: round; }
+.ott .tl { font: 600 10.5px var(--f-mono); fill: var(--muted); paint-order: stroke; stroke: var(--card); stroke-width: 3px; stroke-linejoin: round; }
+.ott .lab .tl { stroke: var(--sunk); }
+.ott .tabo-lens { fill: var(--o-lens); stroke: var(--o-lens-edge); stroke-width: 2; }
+.ott .tabo-tick { stroke: var(--muted); stroke-width: 1.4; }
+.ott .tabo-axis { stroke: var(--o-ray2); stroke-width: 4; stroke-linecap: round; }
+.ott .tabo-ghost { stroke: var(--ok); stroke-width: 2; stroke-dasharray: 5 4; stroke-linecap: round; }
+.ott .tabo-val { font: 700 15px var(--f-display); letter-spacing: .06em; text-transform: uppercase; fill: var(--ink); }
+.ott .pg-far { fill: var(--accent-soft); }
+.ott .pg-mid { fill: color-mix(in srgb, var(--accent-soft) 50%, var(--o-zone)); }
+.ott .pg-near { fill: var(--o-zone); }
+.ott .pg-side { fill: var(--sunk); }
+.ott .pg-hl { stroke: var(--line); stroke-width: 3; }
+.ott .pg-edge { fill: none; stroke: var(--o-lens-edge); stroke-width: 2.4; }
+.ott .pg-t { font: 700 11.5px var(--f-display); letter-spacing: .08em; text-transform: uppercase; fill: var(--ink); }
+.ott .pg-t.s { fill: var(--muted); font-size: 10px; }
+.ott .pg-lead { stroke: var(--ink); stroke-width: 1.2; }
+.ott .gaze { fill: none; stroke: var(--o-ray2); stroke-width: 3; }
+.ott .gaze-d { fill: var(--o-ray2); }
+.ott .rl { stroke: var(--muted); stroke-width: 1.4; }
+.ott .rz { fill: var(--o-zone); stroke: var(--ok); stroke-width: 1.2; }
+.ott .rp { fill: var(--o-ray); }
+.ott .rzt { fill: var(--ok); }
+.ott .ra { fill: var(--muted); }
+
+/* prova lenti */
+.ott .sim { gap: 10px; }
+.ott .readout { display: flex; flex-wrap: wrap; gap: 6px; }
+.ott .pill { font: 600 13px/1 var(--f-mono); padding: 7px 9px; border-radius: 7px; background: var(--sunk); color: var(--muted); }
+.ott .pill.s-nitido, .ott .pill.w-riposo { background: var(--ok-soft); color: var(--ok); }
+.ott .pill.w-lavora, .ott .pill.w-poco { background: var(--accent-soft); color: var(--accent); }
+.ott .pill.s-quasi, .ott .pill.w-fatica { background: var(--warn-soft); color: var(--warn); }
+.ott .pill.s-sfocato, .ott .pill.s-molto, .ott .pill.w-nonbasta { background: var(--err-soft); color: var(--err); }
+.ott .focusw { font-size: 14.5px; color: var(--muted); margin-top: -2px; }
+.ott .goal { border-left: 3px solid var(--accent); padding-left: 10px; }
+.ott .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.ott .lensctl { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
+.ott .lensctl .stp { min-height: 46px; padding: 6px 12px; font: 600 15px var(--f-mono); }
+.ott .lensval { display: block; text-align: center; font: 600 21px/1.1 var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ott .row.ends { justify-content: space-between; margin-top: -6px; font: 500 12px var(--f-mono); }
+.ott .views { display: flex; border-radius: 10px; }
+.ott .views button { flex: 1 1 0; min-width: 0; min-height: 42px; font: 600 13.5px/1.2 var(--f-body); padding: 6px 8px; white-space: normal; }
+/* quattro scelte: due righe sul telefono, una riga sullo schermo largo */
+.ott .views.grid2 { display: grid; grid-template-columns: 1fr 1fr; }
+.ott .views.grid2 button:nth-child(odd) { border-left: 0; }
+.ott .views.grid2 button:nth-child(n+3) { border-top: 1px solid var(--line); }
+@media (min-width: 560px) {
+  .ott .views.grid2 { grid-template-columns: repeat(4, 1fr); }
+  .ott .views.grid2 button:nth-child(n+3) { border-top: 0; }
+  .ott .views.grid2 button + button { border-left: 1px solid var(--line); }
+}
+.ott .rrow { display: flex; flex-direction: column; gap: 2px; font-size: 14.5px; }
+.ott .two { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.ott .two figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.ott .two figcaption { font-size: 14px; color: var(--muted); }
+@media (min-width: 560px) { .ott .two { grid-template-columns: 1fr 1fr; } }
+.ott .lv-out { display: flex; flex-direction: column; gap: 8px; }
+.ott .lab .seg + .seg { margin-top: -2px; }
+
+/* ricetta */
+.ott .ricetta { background: #fffdf6; color: #1b1f24; border: 1px solid #d8d2bf; border-radius: 10px; padding: 12px 12px 10px; box-shadow: 0 1px 0 #e8e2cf; display: flex; flex-direction: column; gap: 8px; }
+.ott .rx-h { display: flex; justify-content: space-between; gap: 8px; font: 500 13px var(--f-body); color: #5b6470; }
+.ott .rx-h b { color: #1b1f24; font-weight: 600; }
+.ott .ricetta table { width: 100%; border-collapse: collapse; }
+.ott .ricetta th { font: 700 13px var(--f-display); letter-spacing: .08em; color: #5b6470; text-align: center; padding: 2px 4px 6px; }
+.ott .ricetta tbody th { text-align: left; color: #1b1f24; font-size: 15px; width: 3.2em; }
+.ott .ricetta td { padding: 3px; text-align: center; }
+.ott .rx-c { display: block; width: 100%; min-height: 44px; border-radius: 8px; border: 1px solid #d8d2bf; background: #ffffff; color: #1b1f24; font: 600 16px/44px var(--f-mono); font-variant-numeric: tabular-nums; padding: 0 2px; }
+button.rx-c { cursor: pointer; }
+.ott .rx-c.empty { color: #a0a6ad; }
+.ott .rx-c.ok { background: #e1f0e5; border-color: #2d7a47; color: #2d7a47; }
+.ott .rx-c.bad { background: #f9e1df; border-color: #b0271f; color: #b0271f; }
+.ott .rx-c.hl { background: #e3ebf7; border-color: #1f4fa0; }
+.ott .ricetta tr.add th { color: #0b6b70; }
+.ott .rx-note { font: 500 12.5px var(--f-body); color: #5b6470; text-align: left; }
+.ott .task .q { font: 600 18px/1.3 var(--f-body); }
+.ott .ok-txt { border-left: 3px solid var(--ok); padding-left: 10px; color: var(--ok); }
+
+/* il banco: dialogo */
+.ott .chat { display: flex; flex-direction: column; gap: 10px; }
+.ott .say { max-width: 92%; border-radius: 16px; padding: 10px 13px; display: flex; flex-direction: column; gap: 3px; scroll-margin-top: calc(var(--barh, 84px) + 10px); }
+.ott .say .who { font: 600 12px/1.2 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
+.ott .say p { font-size: 16.5px; line-height: 1.45; }
+.ott .say.c { align-self: flex-start; background: var(--accent-soft); border-bottom-left-radius: 4px; }
+.ott .say.c .who { color: var(--accent); }
+.ott .say.t { align-self: flex-end; background: var(--card); border: 1px solid var(--line); border-bottom-right-radius: 4px; }
+.ott .say.t .who { color: var(--muted); }
+.ott .say.n { align-self: stretch; max-width: none; background: none; padding: 2px 4px; font-size: 14.5px; font-style: italic; color: var(--muted); border-radius: 0; }
+.ott .say.n.end { font-style: normal; color: var(--ink); }
+.ott .coach { border-radius: 10px; padding: 10px 13px; display: flex; flex-direction: column; gap: 3px; border-left: 4px solid; background: var(--sunk); scroll-margin-top: calc(var(--barh, 84px) + 10px); }
+.ott .coach p { font-size: 15px; line-height: 1.45; }
+.ott .coach.good { border-color: var(--ok); }
+.ott .coach.good .eyebrow { color: var(--ok); }
+.ott .coach.fair { border-color: var(--warn); }
+.ott .coach.fair .eyebrow { color: var(--warn); }
+.ott .coach.bad { border-color: var(--err); }
+.ott .coach.bad .eyebrow { color: var(--err); }
+.ott .coach.grave { border-color: var(--err); background: var(--err-soft); }
+.ott .coach.grave .eyebrow { color: var(--err); }
+.ott .choices .opt.bad { text-decoration: line-through; text-decoration-thickness: 1px; opacity: .7; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ott .hr { animation: none; }
+  .ott .eye-lens { transition: none; }
+}

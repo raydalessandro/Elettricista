@@ -8,10 +8,12 @@ import { benchTermName, compName, descTerm, shortName, swState, termLabel as tLa
 import { applyFault, checkProof, contradiction, healthyWires, powerCheck, probePoints, proofGaps, readContinuity, readVoltage, wrongText } from "../core/faults";
 import { RULES } from "../core/rules";
 
-export function mountGame(app) {
+export function mountGame(app, opts) {
   "use strict";
   if (!app || app.dataset.mounted) return;
   app.dataset.mounted = "1";
+  /* sul sito il gioco sta accanto agli altri corsi: un link riporta alla scelta. Nella versione in un file solo non c'è. */
+  const HOME = opts && opts.home ? String(opts.home) : "";
 
   /* ---------- utilità ---------- */
   const LV = {};
@@ -288,7 +290,7 @@ export function mountGame(app) {
     const latest = CHAPTERS[CHAPTERS.length - 1];
     /* il capitolo della settimana viene prima: si può giocare anche senza aver finito gli altri */
     const nx = LEVELS.find(l => l.cap === latest.n && !prog.done[l.id]) || nextLevel();
-    return `<section class="hero"><h1 class="vh">Fase Neutro Terra</h1>${HERO}
+    return `${HOME ? `<a class="btn-q all-courses" href="${esc(HOME)}">${ICON.back} Tutti i corsi</a>` : ""}<section class="hero"><h1 class="vh">Fase Neutro Terra</h1>${HERO}
       <p class="lede">Un capitolo alla settimana. Prima la fisica che serve, poi le mani sui fili, il collaudo e la ricerca dei guasti.</p>
       <div class="stats"><span class="stat"><b>${stars}</b>/${LEVELS.length * 3} stelle</span><span class="stat"><b>${prog.cards.length}</b> schede</span><span class="stat"><b>${prog.bets.won}</b>/${prog.bets.tot} scommesse vinte</span></div>
       <div class="row">${nx ? `<button class="btn btn-p" data-act="open" data-arg="${nx.id}">${prog.done[nx.id] || Object.keys(prog.done).some(id => LEVELS.find(l => l.id === id && l.cap === nx.cap)) ? "Continua" : "Comincia"}: ${lvNum(nx)} · ${esc(nx.title)}</button>` : `<button class="btn btn-p" data-act="quaderno">Tutto fatto: apri il quaderno</button>`}<button class="btn btn-s" data-act="quaderno">${ICON.book} Quaderno</button></div>

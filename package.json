@@ -1,8 +1,8 @@
 {
   "name": "elettricista",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "Fase Neutro Terra: il gioco per imparare l'impianto elettrico di casa, un capitolo alla settimana.",
+  "description": "Due corsi, un capitolo alla settimana: Fase Neutro Terra (impianto elettrico di casa) e Sfera Cilindro Asse (il banco di un negozio di ottica).",
   "type": "module",
   "engines": {
     "node": ">=22.12"
@@ -18,7 +18,8 @@
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm run lint && npm run standard && npm test",
     "build:artifact": "tsx scripts/build-artifact.ts",
-    "packets": "tsx scripts/packets.ts"
+    "packets": "tsx scripts/packets.ts",
+    "packets:ottica": "tsx scripts/packets-ottica.ts"
   },
   "dependencies": {
     "@fontsource/barlow": "^5.3.0",

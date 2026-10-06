@@ -1,53 +1,66 @@
-# Fase Neutro Terra — istruzioni per chi lavora sul repository
+# Fase Neutro Terra · Sfera Cilindro Asse — istruzioni per chi lavora sul repository
 
-Gioco per imparare l'impianto elettrico di casa, per Ray (Milano). Esce **un capitolo alla settimana**: Ray si allena su quel capitolo per tutta la settimana, in cantiere e sul telefono.
+Due corsi di formazione per Ray (Milano), nello stesso sito. Esce **un capitolo alla settimana**: Ray ci si allena per tutta la settimana, sul telefono.
 
+- **Fase Neutro Terra** (`/elettricista`): l'impianto elettrico di casa, in cantiere.
+- **Sfera Cilindro Asse** (`/ottica`): l'addetto vendite in un negozio di ottica. Pochissima teoria, molto da vedere, poi i clienti al banco.
+- La home `/` fa scegliere il corso e mostra le stelle di ognuno.
 - Sito: Next.js su Vercel, da questo repository (`main` si pubblica da solo).
-- Anteprima in un file solo: `npm run build:artifact` → `dist/fase-neutro-terra.html` (si pubblica come artifact su claude.ai).
-- Regole per scrivere gli esercizi: `docs/STANDARD.md`. Piano dei capitoli: `docs/CAPITOLI.md`.
+- Anteprime in un file solo: `npm run build:artifact` → `dist/fase-neutro-terra.html` e `dist/sfera-cilindro-asse.html` (si pubblicano come artifact su claude.ai).
+- Regole per scrivere gli esercizi: `docs/STANDARD.md` (elettricista) e `docs/ottica/STANDARD.md` (ottica). Piani dei capitoli: `docs/CAPITOLI.md` e `docs/ottica/CAPITOLI.md`.
 
 ## Comandi
 
 ```sh
 npm install
 npm run dev          # sito in locale
-npm run check        # tipi, lint, standard (S1–S18), test unitari e giro completo
+npm run check        # tipi, lint, standard (S1–S18 e O1–O10), test unitari e giri completi
 npm run build        # build di produzione
 npm run test:e2e     # prove col dito su telefono 390×844 (serve la build); in locale: PW_CHROMIUM=/percorso/chromium
-npm run standard     # solo il controllo dello standard, livello per livello
-npm run packets      # pacchetti per la prova alla cieca (dist/playtest)
-npx tsx scripts/banco.ts g1 1   # banco guasti da riga di comando, per i revisori (comandi da stdin)
+npm run standard     # solo il controllo degli standard, livello per livello, tutti e due i corsi
+npm run packets      # elettricista: pacchetti per la prova alla cieca (dist/playtest)
+npm run packets:ottica   # ottica: pacchetti per la prova alla cieca (dist/playtest-ottica; serve build:artifact)
+npx tsx scripts/banco.ts g1 1      # elettricista: banco guasti da riga di comando (comandi da stdin)
+npx tsx scripts/negozio.ts o1 7    # ottica: prova lenti e banco da riga di comando; il seme sceglie la ricetta del cliente
 ```
 
 ## Dove sta cosa
 
 | Percorso | Cosa |
 |---|---|
-| `src/core/engine.ts` | Motore: reti, potenziali, collaudo su tutte le combinazioni dei comandi |
-| `src/core/rules.ts` | Regole della tavola (cosa si collega a cosa). Le usano gioco e controlli |
-| `src/core/faults.ts` | Banco guasti: guasti, tester (tensione e continuità), sintomi, firme delle misure, la prova (diagnosi dimostrata) |
-| `src/core/geometry.ts` | Disegno dei fili: curve che non coprono morsetti, scritte e pezzi altrui (e il controllo S18) |
-| `src/core/names.ts` | Nomi di pezzi e morsetti, uguali nel gioco e nel banco da riga di comando |
-| `src/core/types.ts` | Formato dei dati: livelli, tavola, guasti |
-| `src/content/` | Contenuti: `capitoli/capN.ts`, schede, prontuario, `index.ts` con l'elenco dei capitoli |
-| `src/standard/validate.ts` | Controllo automatico dello standard |
-| `src/game/ui.js` | Interfaccia (stringhe HTML + un ascoltatore), montata da `src/components/Game.tsx` |
-| `tests/unit/` | Vitest: motore, standard, giro completo in jsdom |
+| `src/app/page.tsx` | La home che fa scegliere il corso (`src/components/CourseStars.tsx` legge le stelle) |
+| `src/core/engine.ts` | Elettricista · motore: reti, potenziali, collaudo su tutte le combinazioni dei comandi |
+| `src/core/rules.ts` | Elettricista · regole della tavola (cosa si collega a cosa). Le usano gioco e controlli |
+| `src/core/faults.ts` | Elettricista · banco guasti: guasti, tester, sintomi, firme delle misure, la prova |
+| `src/core/geometry.ts` | Elettricista · disegno dei fili (e il controllo S18) |
+| `src/core/names.ts`, `src/core/types.ts` | Elettricista · nomi di pezzi e morsetti; formato dei dati |
+| `src/content/` | Elettricista · contenuti: `capitoli/capN.ts`, schede, prontuario, `index.ts` |
+| `src/standard/validate.ts` | Elettricista · controllo automatico dello standard |
+| `src/game/ui.js` | Elettricista · interfaccia, montata da `src/components/Game.tsx` |
+| `src/ottica/core/eye.ts` | Ottica · modello dell'occhio in diottrie: vergenze, accomodazione con l'età, cilindri (Thibos), decimi |
+| `src/ottica/core/prova.ts` | Ottica · occhiale di prova: valori, soluzione, giudizio; varianti (`withVariant`, `fill`); i quattro occhiali della ricetta |
+| `src/ottica/core/banco.ts` | Ottica · dialoghi al banco e stelle (gioco e riga di comando) |
+| `src/ottica/draw.ts` | Ottica · disegni: occhio in sezione, scene sfocate dal modello, schema TABO, progressiva, ricetta |
+| `src/ottica/content/` | Ottica · contenuti: `cap1.ts`, prontuario, `index.ts` |
+| `src/ottica/standard/validate.ts` | Ottica · controllo automatico dello standard (O1–O10, con ogni variante) |
+| `src/ottica/ui.ts` | Ottica · interfaccia (stringhe HTML + un ascoltatore), montata da `src/components/Ottica.tsx`; stile in `src/app/ottica.css`, tutto sotto `.ott` |
+| `tests/unit/` | Vitest: motori, standard, giri completi in jsdom |
 | `tests/e2e/` | Playwright: il dito vero sul telefono |
 
 ## Come si aggiunge un capitolo
 
-1. Leggi `docs/STANDARD.md` e `docs/CAPITOLI.md`.
-2. Scrivi `src/content/capitoli/capN.ts` (livelli + schede del capitolo) e aggiungilo a `src/content/index.ts` (`CHAPTERS`, `LEVELS`, `CARDS`). I numeri `n` continuano quelli del capitolo prima.
-3. Se servono pezzi nuovi (pulsanti, relè, timer…), estendi `engine.ts` e i tipi, con test in `tests/unit/`.
+1. Leggi lo standard e il piano del corso.
+2. Elettricista: scrivi `src/content/capitoli/capN.ts` e aggiungilo a `src/content/index.ts` (`CHAPTERS`, `LEVELS`, `CARDS`). Ottica: scrivi `src/ottica/content/capN.ts` e aggiungilo a `src/ottica/content/index.ts`. I numeri `n` continuano quelli del capitolo prima.
+3. Se servono pezzi nuovi, estendi il motore e i tipi, con test in `tests/unit/`.
 4. `npm run check` deve dare 0 errori. Gli avvisi si leggono uno per uno.
-5. Prova alla cieca: `npm run packets`, poi un revisore che non ha visto il progetto gioca i pacchetti (aiuti in un file a parte; per il banco guasti usa `scripts/banco.ts`). Ogni assunzione su qualcosa che non è sullo schermo è un difetto.
-6. `npm run build && npm run test:e2e`, poi aggiorna `docs/CAPITOLI.md` (stato e data) e fai push su `main`.
+5. Prova alla cieca: `npm run packets` o `npm run build:artifact && npm run packets:ottica`, poi un revisore che non ha visto il progetto gioca i pacchetti (aiuti in un file a parte; da riga di comando `scripts/banco.ts` o `scripts/negozio.ts`). Per l'ottica, anche un revisore esperto legge i contenuti. Ogni assunzione su qualcosa che non è sullo schermo è un difetto.
+6. `npm run build && npm run test:e2e`, poi aggiorna il piano (stato e data) e fai push su `main`.
 
 ## Regole fisse
 
-- Testi in italiano semplice, frasi corte, termini del mestiere con la versione «da cantiere» nel lessico (`g` nelle schede).
-- Regole italiane: colori IEC (marrone/nero/grigio fase, blu neutro, giallo-verde terra), 230 V, CEI 64-8, magnetotermici C10/C16, differenziale 30 mA.
-- Tutto quello che serve per decidere sta sullo schermo o nelle schede già lette. Tutto quello che il collaudo giudica è stato insegnato prima.
+- Testi in italiano semplice, frasi corte, termini del mestiere con la versione «da cantiere» o «da negozio» nel lessico (`g` nelle schede).
+- Elettricista, regole italiane: colori IEC (marrone/nero/grigio fase, blu neutro, giallo-verde terra), 230 V, CEI 64-8, magnetotermici C10/C16, differenziale 30 mA.
+- Ottica: chi sta al banco non misura la vista, non fa diagnosi, non promette salute; la vista la misura l'ottico optometrista o l'oculista. Diottrie scritte come in negozio («−1,75», «+2,00»).
+- Tutto quello che serve per decidere sta sullo schermo o nelle schede già lette. Tutto quello che il gioco giudica è stato insegnato prima.
 - Codice copiato solo da licenze permissive (MIT, BSD, Apache, CC BY). Da GPL, CC BY-NC o progetti chiusi si prendono idee, non codice.
-- Non rompere i capitoli già usciti: i progressi di Ray stanno nel localStorage (`fase-neutro-terra.v1`).
+- Non rompere i capitoli già usciti: i progressi di Ray stanno nel localStorage (`fase-neutro-terra.v1` e `sfera-cilindro-asse.v1`).

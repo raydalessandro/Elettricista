@@ -29,7 +29,7 @@ export async function openGame(page: Page) {
   page.on("console", m => {
     if (m.type() === "error") errors.push("console: " + m.text());
   });
-  await page.goto("/");
+  await page.goto("/elettricista");
   await page.waitForFunction(() => !!(window as unknown as { __fnt?: unknown }).__fnt);
   return errors;
 }

@@ -44,4 +44,5 @@ jobs:
             playwright-report/
             test-results/
             dist/fase-neutro-terra.html
+            dist/sfera-cilindro-asse.html
           if-no-files-found: ignore

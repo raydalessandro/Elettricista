@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { mountGame } from "@/game/ui";
+import { mountOttica } from "@/ottica/ui";
 
-/** Monta il gioco nel browser. Il gioco disegna da solo le sue schermate dentro #app. */
-export default function Game() {
+/** Monta il corso di ottica nel browser: disegna da solo le sue schermate dentro #app. */
+export default function Ottica() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    mountGame(ref.current, { home: "/" });
+    mountOttica(ref.current, { home: "/" });
   }, []);
   return (
     <>
-      <div id="app" ref={ref}>
+      <div id="app" className="ott" ref={ref}>
         <noscript>
           <p style={{ padding: 16 }}>Per giocare serve JavaScript.</p>
         </noscript>
