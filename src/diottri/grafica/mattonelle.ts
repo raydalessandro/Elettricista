@@ -33,6 +33,7 @@ export const MATTONELLE: Record<string, Mattonella> = {
   parquet: { pal: "parquet", px: righe((x, y) => (y % 4 === 3 ? "2" : (x + Math.floor(y / 4) * 5) % 16 === 0 ? "2" : "1")) },
   tappeto: { pal: "tappeto", px: righe((x, y) => (x === 0 || y === 0 || x === 15 || y === 15 ? "3" : (x + y) % 4 === 0 ? "1" : "2")) },
   muro_int: { pal: "muro_int", px: righe((_x, y) => (y > 12 ? "2" : y === 12 ? "3" : "1")) },
+  muro_basso: { pal: "muro_int", px: righe((_x, y) => (y < 3 ? "3" : y < 6 ? "2" : "1")) },
   zerbino: { pal: "banco", px: righe((x, y) => (x < 2 || x > 13 ? "1" : (x + y) % 2 === 0 ? "2" : "3")) },
 };
 

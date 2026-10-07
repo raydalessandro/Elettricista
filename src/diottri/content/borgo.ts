@@ -222,10 +222,11 @@ const BOTTEGA: MappaDef = {
     "pppTTTTppp",
     "pppTTTTppp",
     "pppppppppp",
-    "WWWWzWWWWW",
+    "BBBBzBBBBB",
   ],
   legenda: {
     W: { tile: "muro_int", solido: true },
+    B: { tile: "muro_basso", solido: true },
     p: { tile: "parquet" },
     T: { tile: "tappeto" },
     z: { tile: "zerbino" },
