@@ -13,7 +13,7 @@ Piano in [`docs/CAPITOLI.md`](docs/CAPITOLI.md), regole degli esercizi in [`docs
 
 ## Sfera Cilindro Asse · `/ottica`
 
-Il corso per chi sta al banco di un negozio di ottica: pochissima teoria, molto da vedere e toccare, poi i clienti. L'occhio in sezione con i raggi, la scena come la vede il cliente (sfocata dal modello, nella direzione giusta), l'occhiale di prova, la ricetta, e i dialoghi al banco con la titolare che commenta ogni risposta.
+Il mestiere dell'ottico a 360 gradi, per chi sa già vendere: il corso non insegna a vendere, insegna l'ottica. Pochissima teoria, molto da vedere e toccare, poi i casi al banco. L'occhio in sezione con i raggi, la scena come la vede il cliente (sfocata dal modello, nella direzione giusta), l'occhiale di prova, la ricetta, e i dialoghi al banco: tutte le risposte sono dette bene, e la titolare commenta l'ottica.
 
 - **Capitolo 1 · L'occhio e le lenti** — miopia, ipermetropia, presbiopia, astigmatismo, la ricetta e un sabato mattina al banco. A ogni partita il cliente ha la sua ricetta.
 
@@ -49,4 +49,4 @@ La prima volta, per le prove col dito: `npx playwright install chromium`.
 | `tests/` | Test unitari (Vitest) e prove col dito (Playwright) |
 | `scripts/` | Controllo dello standard, versioni in un file solo, pacchetti e giochi da riga di comando per la prova alla cieca (`banco.ts`, `negozio.ts`) |
 
-Sono simulatori didattici. Nell'impianto vero si lavora fuori tensione, accanto a chi ne ha la responsabilità. In negozio la vista la misura l'ottico optometrista o l'oculista, e quando serve si manda dal medico.
+Sono simulatori didattici. Nell'impianto vero si lavora fuori tensione, accanto a chi ne ha la responsabilità. In negozio si impara a fare tutto tranne la visita medica: quando serve, si manda dall'oculista.

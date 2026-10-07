@@ -5,7 +5,7 @@ import { CHAPTERS as CH_O, LEVELS as LV_O } from "@/ottica/content";
 
 export const metadata: Metadata = {
   title: "Fase Neutro Terra · Sfera Cilindro Asse",
-  description: "Due corsi, un capitolo alla settimana: l'impianto elettrico di casa e il banco di un negozio di ottica.",
+  description: "Due corsi, un capitolo alla settimana: l'impianto elettrico di casa e il mestiere dell'ottico.",
 };
 
 /* La scelta del corso. I progressi di ogni corso restano dove sono: stesso sito, stesse chiavi. */
@@ -30,8 +30,8 @@ const COURSES = [
   {
     href: "/ottica",
     name: "Sfera Cilindro Asse",
-    what: "Il banco di un negozio di ottica",
-    text: "Come vede l'occhio, cosa correggono le lenti, e i clienti da servire.",
+    what: "Il mestiere dell'ottico",
+    text: "Occhio, lenti, montature, misure e laboratorio, con i casi veri al banco. Per chi sa già vendere.",
     storageKey: "sfera-cilindro-asse.v1",
     total: LV_O.length * 3,
     ch: CH_O[CH_O.length - 1],
@@ -53,7 +53,7 @@ export default function Home() {
       <section className="hero">
         <p className="eyebrow">Due corsi · un capitolo alla settimana</p>
         <h1 className="h1">Scegli il corso</h1>
-        <p className="lede">Prima quello che serve capire, poi le mani: sui fili, sul banco, con i clienti.</p>
+        <p className="lede">Prima quello che serve capire, poi le mani: sui fili, sulle lenti, con i clienti.</p>
       </section>
       <nav className="courses" aria-label="Corsi">
         {COURSES.map(c => (

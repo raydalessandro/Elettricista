@@ -7,8 +7,8 @@ export interface ProntRow {
 
 export const PRONTUARIO: ProntRow[] = [
   {
-    t: "Niente vendita: medico oggi stesso",
-    note: "L'oculista, o il pronto soccorso: quello oculistico, dove c'è. Niente controllo della vista e niente consigli su colliri o farmaci.",
+    t: "Prima il medico, oggi stesso",
+    note: "L'oculista, o il pronto soccorso: quello oculistico, dove c'è. Prima di qualunque controllo della vista; niente colliri o farmaci consigliati.",
     rows: [
       ["Dolore", "all'occhio, o occhio rosso"],
       ["Lenti a contatto", "occhio rosso o dolente: le toglie, non le rimette, le porta al medico con l'astuccio"],
@@ -18,6 +18,7 @@ export const PRONTUARIO: ProntRow[] = [
       ["Mal di testa forte", "con la vista annebbiata, o aloni colorati intorno alle luci"],
       ["Un colpo all'occhio", "anche se sembra niente"],
       ["Un prodotto chimico nell'occhio", "subito acqua corrente, per almeno un quarto d'ora; intanto qualcuno chiama il 112"],
+      ["Bambini", "prima la visita dall'oculista, poi gli occhiali"],
     ],
   },
   {
@@ -30,8 +31,18 @@ export const PRONTUARIO: ProntRow[] = [
       ["ADD", "addizione per vicino, sempre col più"],
       ["—", "il trattino: lì non c'è niente"],
       ["Diottrie", "a quarti: 0,25 – 0,50 – 0,75 – 1,00…"],
-      ["Cilindro col più", "è la stessa lente scritta in un altro modo: la conversione la fa l'ottico"],
-      ["Un numero strano", "chiedi all'ottico; mai dire al cliente «è sbagliata»"],
+      ["Trasposizione", "nuova sfera = sfera + cilindro; il cilindro cambia segno; l'asse gira di 90°"],
+      ["Un numero strano", "si sente l'oculista che ha scritto la ricetta; mai dire al cliente «è sbagliata»"],
+    ],
+  },
+  {
+    t: "Il materiale della lente",
+    note: "Più alto l'indice, più sottile la lente a parità di gradazione. Con poche diottrie toglie poco, intorno al millimetro al bordo. L'indice cambia lo spessore, non la nitidezza.",
+    rows: [
+      ["Organico 1,5 (CR-39)", "la lente standard: leggera, per gradazioni leggere e medie"],
+      ["Policarbonato 1,59", "resiste agli urti: bambini, sport, montature forate"],
+      ["1,6 · 1,67 · 1,74", "sempre più sottili: per gradazioni forti, o montature che lasciano vedere il bordo"],
+      ["Calibro", "una lente forte in un calibro grande è spessa con qualunque indice: col meno al bordo, col più al centro"],
     ],
   },
   {
@@ -46,23 +57,13 @@ export const PRONTUARIO: ProntRow[] = [
     ],
   },
   {
-    t: "Le domande al banco",
+    t: "Anamnesi: le domande che servono",
     rows: [
-      ["Uso", "guida, computer, lettura, lavoro, sport"],
-      ["Da quando", "il problema è nuovo o vecchio?"],
-      ["Occhiali", "cosa porta adesso? Li ha con sé?"],
-      ["Controllo", "quando ha fatto l'ultimo? Ha una ricetta, di quando?"],
-    ],
-  },
-  {
-    t: "Chi fa cosa",
-    note: "Le regole: R.D. 1334/1928, art. 12, e Cassazione penale n. 27853/2001, come le riassume la Regione Friuli Venezia Giulia. In negozio si seguono le procedure del negozio: in dubbio, chiedi alla titolare.",
-    rows: [
-      ["Tu, al banco", "accogli, chiedi, spieghi, proponi; piccole regolazioni solo se te le hanno insegnate"],
-      ["Ottico", "monta e vende gli occhiali; senza ricetta del medico, solo per miopia e presbiopia"],
-      ["Ottico optometrista", "misura la vista e prepara le lenti, anche per ipermetropia e astigmatismo, senza diagnosi, cure, ricette o interventi sull'occhio"],
-      ["Lenti a contatto", "le applica l'ottico abilitato, con una prova; meglio dopo una visita dall'oculista"],
-      ["Oculista", "il medico: visite, malattie, bambini, interventi, colliri"],
+      ["Distanze", "guida e TV (lontano), computer e cruscotto (intermedio), telefono e lettura (vicino)"],
+      ["Da quando", "il disturbo è nuovo o vecchio? È comparso dopo un fatto preciso, come una caduta?"],
+      ["Occhiali", "cosa porta adesso? Li ha con sé? Si misurano al frontifocometro"],
+      ["Controllo e visita", "quando l'ultimo controllo della vista? E l'ultima visita dall'oculista?"],
+      ["Segnali", "dolore, occhio rosso, lampi, calo improvviso: allora prima il medico"],
     ],
   },
 ];

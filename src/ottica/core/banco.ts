@@ -77,12 +77,13 @@ export function say(d: Dialog, st: DlgState, ci: number): ChoiceKind | null {
   return ch.ok;
 }
 
-/** Stelle del banco: ascolto, consiglio, e «servito senza errori» per la giornata in negozio. */
+/** Stelle del banco: spiegazione (anamnesi e spiegazioni giuste al primo colpo), soluzione (soluzioni giuste al primo colpo,
+    nessun errore grave), e «servito senza errori» per la giornata in negozio. Una mossa mai raggiunta non conta come giusta. */
 export function dialogStars(st: DlgState | undefined, d: Dialog) {
-  if (!st || !st.done) return { ascolto: false, consiglio: false, clean: false };
-  const ascolto = d.steps.every((s, i) => s.phase !== "ascolto" || st.firstBest[i]);
-  const consiglio = !st.grave && d.steps.every((s, i) => s.phase === "ascolto" || st.firstBest[i]);
-  return { ascolto, consiglio, clean: st.wrong === 0 };
+  if (!st || !st.done) return { spiegazione: false, soluzione: false, clean: false };
+  const spiegazione = d.steps.every((s, i) => s.phase === "soluzione" || st.firstBest[i]);
+  const soluzione = !st.grave && d.steps.every((s, i) => s.phase !== "soluzione" || st.firstBest[i]);
+  return { spiegazione, soluzione, clean: st.wrong === 0 };
 }
 
 /** Come è andata, in una riga: per il gioco e per la riga di comando. */
@@ -92,11 +93,11 @@ export function dialogOutcome(st: DlgState): { title: string; text: string; ok: 
     return {
       ok: false,
       title: st.grave ? (st.grave === 1 ? "Con un errore grave" : "Con errori gravi") : "Con qualche inciampo",
-      text: `${n(st.wrong, "risposta sbagliata", "risposte sbagliate")}${st.grave ? `, di cui ${n(st.grave, "grave", "gravi")}` : ""}. Rileggi i consigli della titolare qui sopra.`,
+      text: `${n(st.wrong, "risposta sbagliata", "risposte sbagliate")}${st.grave ? `, di cui ${n(st.grave, "grave", "gravi")}` : ""}. Rileggi i commenti della titolare qui sopra.`,
     };
   }
-  if (st.fair) return { ok: true, title: "Servito, senza errori", text: `Nessuna risposta sbagliata, ma ${n(st.fair, "mossa si poteva fare meglio", "mosse si potevano fare meglio")}: rileggi il consiglio della titolare.` };
-  return { ok: true, title: "Servito bene", text: "Tutte le mosse giuste: domande prima, spiegazioni semplici, niente promesse." };
+  if (st.fair) return { ok: true, title: "Servito, senza errori", text: `Nessuna risposta sbagliata, ma ${n(st.fair, "mossa era incompleta", "mosse erano incomplete")}: rileggi il commento della titolare.` };
+  return { ok: true, title: "Servito bene", text: "Tutte le mosse giuste: le domande che servono, le spiegazioni esatte, la soluzione giusta." };
 }
 
 export const KIND_LABEL: Record<ChoiceKind, string> = { best: "Bene", ok: "Va bene, ma…", no: "Non così", grave: "Errore grave" };

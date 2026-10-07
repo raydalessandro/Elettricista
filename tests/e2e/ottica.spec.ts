@@ -89,7 +89,7 @@ test("livello 1 col dito: scommessa, lente, banco, domande, tre stelle", async (
 test("asse col dito e ricetta toccando i numeri", async ({ page }) => {
   const errors = await openOttica(page);
   await page.evaluate(() => { const A = (window as any).__sca.ACTS; A.free(); A.open("o4"); A.next(); A.cardNext(); A.cardNext(); A.next(); });
-  await page.getByRole("button", { name: /La direzione del cilindro/ }).tap();
+  await page.getByRole("button", { name: "È come non avere il cilindro" }).tap();
   // l'asse giusto cambia a ogni partita: si gira dal verso più corto
   const [start, axis]: number[] = await page.evaluate(() => { const F = (window as any).__sca; return [F.S.run.v, F.sol()[0]]; });
   const diff = (((axis - start) % 180) + 180) % 180;

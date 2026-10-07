@@ -145,9 +145,11 @@ export type Prova = ProvaSfera | ProvaVicino | ProvaAsse | ProvaRicetta;
 
 /* ---------- il banco: dialogo col cliente ---------- */
 
-export type Phase = "ascolto" | "spiegazione" | "proposta";
+/** anamnesi: le domande tecniche che servono · spiegazione: spiegare il fenomeno ottico · soluzione: lente, trattamento, occhiale, o il medico. */
+export type Phase = "anamnesi" | "spiegazione" | "soluzione";
 
-/** best: la mossa migliore · ok: va bene ma si poteva fare meglio · no: sbagliata · grave: diagnosi, promessa falsa, pericolo, pressione. */
+/** Chi gioca sa già vendere: tutte le scelte sono ben dette, e si distinguono per l'ottica.
+    best: la mossa migliore · ok: giusta ma incompleta · no: sbagliata sull'ottica · grave: gradazione a occhio, diagnosi, promessa sulla salute, pericolo, medico rimandato. */
 export type ChoiceKind = "best" | "ok" | "no" | "grave";
 
 export interface Choice {
@@ -156,7 +158,7 @@ export interface Choice {
   ok: ChoiceKind;
   /** come reagisce il cliente */
   reply: string;
-  /** il consiglio della titolare, subito dopo */
+  /** il commento della titolare, subito dopo: sul contenuto tecnico */
   tip: string;
   /** solo per best e ok: se si sceglie questa, il dialogo finisce qui, con questa fine (il cliente se ne va) */
   end?: string;

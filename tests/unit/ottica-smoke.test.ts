@@ -3,6 +3,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { CARDS, LEVELS } from "../../src/ottica/content";
 import { isLensProva, solutions, withVariant } from "../../src/ottica/core/prova";
+import { PLANO, see } from "../../src/ottica/core/eye";
+import { clockLines } from "../../src/ottica/draw";
 import { validateOttica } from "../../src/ottica/standard/validate";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -153,17 +155,25 @@ describe("corso di ottica, giro completo", () => {
     expect(text()).toContain(`Franco, ${age} anni`); // text() normalizza anche lo spazio che non va a capo
   });
 
-  it("una scelta «va bene, ma…» con la sua fine chiude il dialogo: Sara se ne va", () => {
-    A.open("o4");
+  it("una scelta «va bene, ma…» con la sua fine chiude il dialogo con quella fine: Anna e i due paia", () => {
+    A.open("o5");
     A.next(); A.next(); A.next();
-    const r = F.S.run, d = F.DLG.sara;
-    for (let k = 0; k < 2; k++) A.say(String(d.steps[r.dlg.sara.step].choices.findIndex((c: any) => c.ok === "best")));
-    A.say(String(d.steps[2].choices.findIndex((c: any) => c.ok === "ok")));
-    const st = r.dlg.sara;
+    const r = F.S.run, d = F.DLG.anna;
+    for (let k = 0; k < 3; k++) A.say(String(d.steps[r.dlg.anna.step].choices.findIndex((c: any) => c.ok === "best")));
+    A.say(String(d.steps[3].choices.findIndex((c: any) => c.ok === "ok")));
+    const st = r.dlg.anna;
     expect(st.done).toBe(true);
-    expect(st.step).toBe(3);
-    expect(text()).toContain("se ne va di corsa");
-    expect(text()).toContain("si poteva fare meglio");
+    expect(text()).toContain("Anna sceglie due montature");
+    expect(text()).toContain("era incompleta");
+  });
+
+  it("il quadrante dice quali righe restano nitide, come un orologio", () => {
+    // −1,50 × 90 senza correzione: meridiano orizzontale miope, righe orizzontali nitide
+    const s = see({ rx: { sph: 0, cyl: -1.5, axis: 90 }, age: 35 }, PLANO, Infinity);
+    expect(clockLines(s)).toBe("dalle 3 alle 9");
+    // la stessa lente girata a 120°: righe dalle 2 alle 8
+    const s2 = see({ rx: { sph: 0, cyl: -1.5, axis: 90 }, age: 35 }, { sph: 0, cyl: -1.5, axis: 120 }, Infinity);
+    expect(clockLines(s2)).toBe("dalle 2 alle 8");
   });
 
   it("i laboratori si toccano senza errori", () => {

@@ -23,7 +23,7 @@ const COURSES = [
     entry: "src/ottica/standalone.ts",
     css: ["src/app/globals.css", "src/app/ottica.css"],
     title: "Sfera Cilindro Asse",
-    desc: "Il corso per stare al banco di un negozio di ottica: come vede l'occhio, cosa correggono le lenti, e i clienti.",
+    desc: "Il mestiere dell'ottico, per chi sa già vendere: come vede l'occhio, cosa correggono le lenti, e i casi al banco.",
     appClass: "ott",
   },
 ];

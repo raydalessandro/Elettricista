@@ -133,7 +133,7 @@ for (const line of input) {
     }).join("\n\n");
   } else if (cmd === "scommessa") {
     if (!p || !("bet" in p)) out = "in questo livello non c'è scommessa";
-    else out = `Prova lenti · ${lv.customer.name}, ${age} anni. Qui sei al posto dell'optometrista, per capire come lavora la lente. In negozio questa prova la fa lui, non tu.\nPrima, scommetti: ${F(p.bet.q)}\n${r.betOrder.map((i, k) => `  ${k + 1}. ${F(p.bet.o[i])}`).join("\n")}`;
+    else out = `Prova lenti · ${lv.customer.name}, ${age} anni. L'occhiale di prova: metti le lenti e guardi come vede il cliente. È una simulazione semplificata, per capire cosa fa la lente.\nPrima, scommetti: ${F(p.bet.q)}\n${r.betOrder.map((i, k) => `  ${k + 1}. ${F(p.bet.o[i])}`).join("\n")}`;
   } else if (cmd === "scommetti") {
     if (!p || !("bet" in p)) out = "in questo livello non c'è scommessa";
     else if (r.bet != null) out = "hai già scommesso";
@@ -232,7 +232,7 @@ for (const line of input) {
     else {
       const d = lv.dialogs[0], ds = dialogStars(r.dlg[d.id], d);
       const first = p && p.type === "ricetta" ? r.rt.i >= p.tasks.length && r.rt.wrong === 0 : !!p && "bet" in p && r.bet === p.bet.ok && r.firstOk === true;
-      out = `${lv.stars[0]}: ${first ? "presa" : "non presa"}\n${lv.stars[1]}: ${ds.ascolto ? "presa" : "non presa"}\n${lv.stars[2]}: ${ds.consiglio ? "presa" : "non presa"}`;
+      out = `${lv.stars[0]}: ${first ? "presa" : "non presa"}\n${lv.stars[1]}: ${ds.spiegazione ? "presa" : "non presa"}\n${lv.stars[2]}: ${ds.soluzione ? "presa" : "non presa"}`;
     }
   } else out = `comando sconosciuto: ${cmd}`;
   console.log(`> ${line}\n${out}\n`);

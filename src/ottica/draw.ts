@@ -146,7 +146,9 @@ export const BLUR_PX = 2.6;
     L'asse TABO si legge da davanti; chi porta gli occhiali vede lo specchio. */
 export function sceneSVG(id: SceneId, s: Sight | null, label?: string): string {
   const sc = SCENES[id]();
-  const sx = s ? BLUR_PX * Math.abs(s.dMax) : 0, sy = s ? BLUR_PX * Math.abs(s.dMin) : 0;
+  // sotto 0,10 diottrie è nitido; sopra, almeno 0,6 pixel, così anche «quasi nitido» si vede
+  const px = (d: number) => (Math.abs(d) < 0.1 ? 0 : 0.6 + BLUR_PX * Math.abs(d));
+  const sx = s ? px(s.dMax) : 0, sy = s ? px(s.dMin) : 0;
   const clip = uid("sc");
   let fg = sc.fg;
   if (sx > 0.06 || sy > 0.06) {
@@ -243,15 +245,26 @@ export function focusWords(s: Sight, scene?: SceneId): string {
     const pos = a === b ? (a > 0 ? "tutti e due davanti alla retina" : "tutti e due dietro la retina")
       : a === 0 || b === 0 ? `uno sulla retina, l'altro ${(a || b) > 0 ? "davanti" : "dietro"}`
       : "uno davanti e uno dietro la retina";
-    return `${lead}, ${pos}: ${scene === "notte" ? "le luci si allungano" : "le righe in una direzione sono più nitide"}`;
+    return `${lead}, ${pos}: ${scene === "notte" ? "le luci si allungano" : scene === "quadrante" ? `le righe più nitide vanno ${clockLines(s)}` : "le righe in una direzione sono più nitide"}`;
   }
   const bit = Math.abs(s.m) < 0.3 ? "un po' " : "";
   return s.m > 0 ? `Fuoco ${bit}davanti alla retina` : `Fuoco ${bit}dietro la retina`;
 }
 
+/** Le righe del quadrante che restano più nitide, lette come un orologio («dalle 2 alle 8»).
+    La scena sfoca lungo la direzione a = 180 − phi (in senso antiorario dall'orizzontale, come la vede chi porta gli occhiali):
+    le righe parallele a quella direzione restano nitide. */
+export function clockLines(s: Sight): string {
+  const a = wearerAngle(s.phi);
+  const h = (((Math.round(3 - a / 30) % 12) + 12) % 12) || 12;
+  const [x, y] = [h, ((h + 5) % 12) + 1].sort((p, q) => p - q);
+  return `dalle ${x} alle ${y}`;
+}
+
 /** Lo sforzo del cristallino, a parole. */
 export function workWords(s: Sight): string {
-  return ({ riposo: "a riposo", poco: "lavora poco", lavora: "lavora", fatica: "in fatica", nonbasta: "non ce la fa" } as const)[s.work];
+  if (s.work === "nonbasta") return s.B < 0.3 ? "al limite, non basta" : "non ce la fa";
+  return ({ riposo: "a riposo", poco: "lavora poco", lavora: "lavora", fatica: "in fatica" } as const)[s.work];
 }
 
 export function sharpWords(s: Sight): string {

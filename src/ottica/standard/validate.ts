@@ -63,6 +63,11 @@ function texts(lv: Level, cards: Record<string, Card>): [string, string][] {
   return out;
 }
 
+/** Le diottrie con segno di un testo, scritte come in negozio («−1,75»). */
+function diopters(t: string): string[] {
+  return [...t.matchAll(/(^|[\s(«"'/])([+−])(\d+,\d\d)/g)].map(m => m[2] + m[3]);
+}
+
 /** O7: diottrie con segno scritte come in negozio: «−1,75», «+2,00». */
 export function badNumbers(t: string): string[] {
   const bad: string[] = [];
@@ -100,8 +105,18 @@ function checkDialog(lv: string, d: Dialog, out: Finding[], pick: boolean, varsL
   if (!d.steps.length) E("dialogo vuoto");
   if (d.steps[0] && !d.steps[0].say) E("la prima mossa deve cominciare con una battuta del cliente");
   if (!d.end) E("manca la fine");
-  if (!pick && !d.steps.some(s => s.phase === "ascolto")) E("nessuna mossa di ascolto: la stella dell'ascolto non si può prendere");
-  if (!pick && !d.steps.some(s => s.phase !== "ascolto")) E("nessuna mossa di spiegazione o proposta");
+  if (!pick && !d.steps.some(s => s.phase !== "soluzione")) E("nessuna mossa di anamnesi o spiegazione: la stella «Spiegazione» non si può prendere");
+  if (!pick && !d.steps.some(s => s.phase === "soluzione")) E("nessuna mossa di soluzione: la stella «Soluzione» non si può prendere");
+  // i numeri delle scelte sbagliate non coincidono con quelli che il dialogo rivela (esito del controllo, ricetta), in nessuna variante
+  for (const v of varsList) {
+    const shown = new Set<string>();
+    d.steps.forEach(s => { for (const t of [s.note, s.say]) if (t) for (const n of diopters(fill(t, v))) shown.add(n); });
+    d.steps.forEach((s, i) => s.choices.forEach((c, j) => {
+      if (c.ok !== "no" && c.ok !== "grave") return;
+      const hit = diopters(fill(c.t, v)).filter(n => shown.has(n));
+      if (hit.length) E(`mossa ${i + 1}.${j + 1}: la scelta sbagliata dice ${hit.join(", ")}, lo stesso numero che il dialogo rivela${v ? " in una variante" : ""}: chi l'ha scelta penserebbe di averci preso`, "errore", "O9");
+    }));
+  }
   d.steps.forEach((s, i) => {
     const at = `mossa ${i + 1}`;
     if (s.choices.length < 2) E(`${at}: servono almeno due scelte`);
@@ -111,14 +126,14 @@ function checkDialog(lv: string, d: Dialog, out: Finding[], pick: boolean, varsL
     if (new Set(ts).size !== ts.length) E(`${at}: due scelte uguali`);
     s.choices.forEach((c, j) => {
       const cj = `${at}.${j + 1}`;
-      if (!c.reply || !c.tip) E(`${cj}: mancano la risposta del cliente o il consiglio della titolare`);
+      if (!c.reply || !c.tip) E(`${cj}: mancano la risposta del cliente o il commento della titolare`);
       if (c.end && (c.ok === "no" || c.ok === "grave")) E(`${cj}: solo una scelta giusta (best o ok) può chiudere il dialogo con la sua fine`);
       if (c.t.length > LIM.choice) E(`${cj}: ${c.t.length} caratteri, troppo lunga per il telefono (max ${LIM.choice})`, "errore", "O8");
       else if (c.t.length > LIM.choiceWarn) E(`${cj}: ${c.t.length} caratteri, lunga`, "avviso", "O8");
       if (c.reply.length > LIM.reply) E(`${cj}: risposta di ${c.reply.length} caratteri (max ${LIM.reply})`, "errore", "O8");
-      if (c.tip.length > LIM.tip) E(`${cj}: consiglio di ${c.tip.length} caratteri (max ${LIM.tip})`, "errore", "O8");
-      // O9: chi sta al banco non dice gradazioni (anche dopo aver messo i numeri della variante)
-      if ((c.ok === "best" || c.ok === "ok") && varsList.some(v => /[+−-]\d+[.,]\d/.test(fill(c.t, v)))) E(`${cj}: una scelta giusta non può dire una gradazione: la misura l'ottico optometrista o l'oculista`, "errore", "O9");
+      if (c.tip.length > LIM.tip) E(`${cj}: commento di ${c.tip.length} caratteri (max ${LIM.tip})`, "errore", "O8");
+      // O9: niente gradazioni a occhio (anche dopo aver messo i numeri della variante): la gradazione si misura
+      if ((c.ok === "best" || c.ok === "ok") && varsList.some(v => /[+−-]\d+[.,]\d/.test(fill(c.t, v)))) E(`${cj}: una scelta giusta non può dire una gradazione: la gradazione si misura, non si dice a occhio`, "errore", "O9");
     });
     if (s.say && s.say.length > LIM.say) E(`${at}: battuta di ${s.say.length} caratteri (max ${LIM.say})`, "errore", "O8");
   });

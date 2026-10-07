@@ -3,7 +3,7 @@
 Due corsi di formazione per Ray (Milano), nello stesso sito. Esce **un capitolo alla settimana**: Ray ci si allena per tutta la settimana, sul telefono.
 
 - **Fase Neutro Terra** (`/elettricista`): l'impianto elettrico di casa, in cantiere.
-- **Sfera Cilindro Asse** (`/ottica`): l'addetto vendite in un negozio di ottica. Pochissima teoria, molto da vedere, poi i clienti al banco.
+- **Sfera Cilindro Asse** (`/ottica`): il mestiere dell'ottico a 360 gradi, per chi sa già vendere (conosce la PNL, vende da anni). Il corso non insegna a vendere: insegna l'ottica. Pochissima teoria, molto da vedere, poi i casi al banco.
 - La home `/` fa scegliere il corso e mostra le stelle di ognuno.
 - Sito: Next.js su Vercel, da questo repository (`main` si pubblica da solo).
 - Anteprime in un file solo: `npm run build:artifact` → `dist/fase-neutro-terra.html` e `dist/sfera-cilindro-asse.html` (si pubblicano come artifact su claude.ai).
@@ -60,7 +60,7 @@ npx tsx scripts/negozio.ts o1 7    # ottica: prova lenti e banco da riga di coma
 
 - Testi in italiano semplice, frasi corte, termini del mestiere con la versione «da cantiere» o «da negozio» nel lessico (`g` nelle schede).
 - Elettricista, regole italiane: colori IEC (marrone/nero/grigio fase, blu neutro, giallo-verde terra), 230 V, CEI 64-8, magnetotermici C10/C16, differenziale 30 mA.
-- Ottica: chi sta al banco non misura la vista, non fa diagnosi, non promette salute; la vista la misura l'ottico optometrista o l'oculista. Diottrie scritte come in negozio («−1,75», «+2,00»).
+- Ottica: niente gradazioni a occhio, niente diagnosi, niente promesse sulla salute. Niente «chi fa cosa»: chi gioca imparerà a fare tutto, tranne la visita medica (l'oculista). Al banco tutte le scelte sono dette bene e si distinguono per l'ottica; la titolare può usare il lessico della vendita e della PNL per comunicare, non per insegnarla. Diottrie scritte come in negozio («−1,75», «+2,00»).
 - Tutto quello che serve per decidere sta sullo schermo o nelle schede già lette. Tutto quello che il gioco giudica è stato insegnato prima.
 - Codice copiato solo da licenze permissive (MIT, BSD, Apache, CC BY). Da GPL, CC BY-NC o progetti chiusi si prendono idee, non codice.
 - Non rompere i capitoli già usciti: i progressi di Ray stanno nel localStorage (`fase-neutro-terra.v1` e `sfera-cilindro-asse.v1`).

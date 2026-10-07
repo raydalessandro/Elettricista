@@ -126,7 +126,7 @@ export function mountOttica(app: HTMLElement | null, opts: { home?: string } = {
     const nx = LEVELS.find(l => l.cap === latest.n && !prog.done[l.id]) || nextLevel();
     const started = nx && Object.keys(prog.done).some(id => LV[id] && LV[id].cap === nx.cap);
     return `${HOME ? `<a class="btn-q all-courses" href="${esc(HOME)}">${ICON.back} Tutti i corsi</a>` : ""}<section class="hero"><h1 class="vh">Sfera Cilindro Asse</h1>${HERO}
-      <p class="lede">Un capitolo alla settimana per stare al banco di un negozio di ottica. Prima come vede l'occhio e cosa fanno le lenti, poi i clienti.</p>
+      <p class="lede">Il mestiere dell'ottico, un capitolo alla settimana, per chi con i clienti ci sa già fare. Come vede l'occhio, cosa fanno le lenti, e i casi veri al banco.</p>
       <div class="stats"><span class="stat"><b>${stars}</b>/${LEVELS.length * 3} stelle</span><span class="stat"><b>${prog.cards.length}</b> schede</span><span class="stat"><b>${prog.bets.won}</b>/${prog.bets.tot} scommesse vinte</span></div>
       <div class="row">${nx ? `<button class="btn btn-p" data-act="open" data-arg="${nx.id}">${started ? "Continua" : "Comincia"}: ${lvNum(nx)} · ${esc(nx.title)}</button>` : `<button class="btn btn-p" data-act="quaderno">Tutto fatto: apri il quaderno</button>`}<button class="btn btn-s" data-act="quaderno">${ICON.book} Quaderno</button></div>
     </section>
@@ -134,14 +134,14 @@ export function mountOttica(app: HTMLElement | null, opts: { home?: string } = {
       <ol class="olist">
         <li><strong>Il cliente</strong> entra e ti dice cosa gli succede.</li>
         <li><strong>La teoria</strong>: poche schede, con l'occhio e le lenti da toccare.</li>
-        <li><strong>La prova lenti</strong>: prima scommetti su cosa serve. Poi, al posto dell'optometrista, giri le lenti e guardi come vede il cliente. A ogni partita il cliente ha la sua ricetta.</li>
-        <li><strong>Il banco</strong>: parli col cliente. Scegli cosa dire; la titolare del negozio ti dice subito come è andata.</li>
+        <li><strong>L'occhiale di prova</strong>: prima scommetti su cosa serve, poi provi le lenti e guardi come vede il cliente. È una simulazione semplificata, per capire cosa fa la lente. A ogni partita il cliente ha la sua ricetta.</li>
+        <li><strong>Il banco</strong>: vendere lo sai già. Tutte le risposte sono dette bene; conta l'ottica: le domande tecniche, la spiegazione esatta, la soluzione giusta. La titolare commenta ogni risposta.</li>
         <li><strong>Le domande dal laboratorio</strong>: tre domande per ripassare; una può tornare su un livello vecchio.</li>
       </ol>
       <p class="muted">Ogni livello vale tre stelle: la prova e il banco. Le schede finiscono nel quaderno, insieme al prontuario e al lessico.</p>
     </details>
     ${CHAPTERS.slice().reverse().map(vChapter).join("")}
-    <p class="fine">È un gioco di formazione, con casi semplificati. In negozio la vista la misura l'ottico optometrista o l'oculista; chi sta al banco ascolta, spiega e consiglia, e manda dal medico quando serve.</p>
+    <p class="fine">È un gioco di formazione, con casi semplificati. In negozio si impara a fare tutto, tranne una cosa: la visita medica. Quando serve, si manda dall'oculista.</p>
     ${S.confirmReset ? `<div class="card confirm"><p><strong>Azzerare tutto?</strong> Cancelli stelle, schede e scommesse di questo corso, su questo dispositivo.</p><div class="row"><button class="btn btn-s danger" data-act="resetYes">Azzera</button><button class="btn btn-s" data-act="resetNo">Annulla</button></div></div>` : ""}
     <div class="row"><button class="btn-q" data-act="free" aria-pressed="${prog.free}">${prog.free ? "Ordine libero attivo: tocca per tornare in ordine" : "Sblocca tutti i livelli"}</button><button class="btn-q" data-act="resetAsk">Azzera i progressi</button></div>`;
   }
@@ -236,7 +236,7 @@ export function mountOttica(app: HTMLElement | null, opts: { home?: string } = {
     if (p.type === "ricetta") return vRicetta(lv, p);
     const r = R(), c = custOf(lv);
     const head = `<p class="eyebrow">Prova lenti · ${esc(c.name)}, ${c.age} anni</p><h1 class="h1">${p.type === "asse" ? "Gira il cilindro" : p.type === "vicino" ? "La lente per leggere" : "Metti a fuoco"}</h1>
-      <p class="muted">Qui sei al posto dell'optometrista, per capire come lavora la lente. In negozio questa prova la fa lui, non tu.</p>`;
+      <p class="muted">L'occhiale di prova: metti le lenti e guardi come vede il cliente. È una simulazione semplificata, per capire cosa fa la lente.</p>`;
     if (r.bet == null) return head + vBet(p.bet);
     const hint = r.hint >= 0 ? `<div class="capo"><span class="eyebrow">Aiuto ${r.hint + 1} di ${p.hints.length}</span><p>${esc(F(p.hints[r.hint]))}</p></div>` : "";
     return `${head}${vBet(p.bet)}
@@ -330,7 +330,7 @@ export function mountOttica(app: HTMLElement | null, opts: { home?: string } = {
         <div class="res ${st.wrong || st.fair ? "warn" : "ok"}"><h2>${esc(oc.title)}</h2><p>${esc(oc.text)}</p></div>
         <div class="row"><button class="btn btn-p" data-act="${more ? "nextClient" : "next"}">${more ? "Prossimo cliente" : "Domande dal laboratorio"}</button></div>`;
     }
-    const rule = lv.pick ? "Una stella per ogni cliente servito senza risposte sbagliate." : `Stelle: «${lv.stars[1]}» se le domande giuste le fai al primo colpo; «${lv.stars[2]}» se spieghi e proponi bene al primo colpo, senza errori gravi.`;
+    const rule = lv.pick ? "Una stella per ogni cliente servito senza risposte sbagliate." : `Stelle: «${lv.stars[1]}» se domande tecniche e spiegazioni sono giuste al primo colpo; «${lv.stars[2]}» se la soluzione è giusta al primo colpo, senza errori gravi.`;
     return `${head}${chat}
       <p class="eyebrow">Cosa dici?</p><div class="opts choices" id="choices" role="group" aria-label="Cosa dici">${st.order[st.step].map(ci => { const tried = st.tried.includes(ci); return `<button class="opt${tried ? " bad" : ""}" data-act="say" data-arg="${ci}"${tried ? " disabled" : ""}>${esc(choiceText(d, st, ci))}</button>`; }).join("")}</div>
       <p class="fine">${esc(rule)}</p>`;
@@ -373,7 +373,7 @@ export function mountOttica(app: HTMLElement | null, opts: { home?: string } = {
     const p = lv.prova!;
     if (p.type === "ricetta") first = r.rt.i >= p.tasks.length && r.rt.wrong === 0;
     else first = r.bet === p.bet.ok && r.firstOk === true;
-    return [first, ds.ascolto, ds.consiglio];
+    return [first, ds.spiegazione, ds.soluzione];
   }
   function starWhy(lv: Level, st: boolean[]): string[] {
     const r = R();
@@ -385,8 +385,8 @@ export function mountOttica(app: HTMLElement | null, opts: { home?: string } = {
       : (st[0] ? `Scommessa giusta e ${what} giust${p.type === "asse" ? "o" : "a"} alla prima conferma.` : r.bet !== p.bet.ok ? "La scommessa era sbagliata." : r.firstOk == null ? `Non hai confermato ${what}.` : `${p.type === "asse" ? "Il primo asse confermato non era quello giusto." : "La prima lente confermata non era quella giusta."}`);
     return [
       w0,
-      st[1] ? "Prima le domande, poi le proposte." : !d || !d.done ? "Dialogo non concluso." : "Hai proposto o deciso prima di chiedere quello che serviva.",
-      st[2] ? "Spiegazioni chiare e proposte giuste, senza promesse." : !d || !d.done ? "Dialogo non concluso." : d.grave ? "C'è stato un errore grave: rileggi i consigli della titolare." : d.step < DLG[d.id].steps.length ? "Il cliente se n'è andato prima della fine: la mossa migliore lo teneva al banco." : "Non tutte le spiegazioni e proposte erano le migliori al primo colpo.",
+      st[1] ? "Domande tecniche e spiegazioni giuste al primo colpo." : !d || !d.done ? "Dialogo non concluso." : d.step < DLG[d.id].steps.length ? "Il cliente se n'è andato prima della fine: mancano le ultime mosse." : "Non tutte le domande e le spiegazioni erano giuste al primo colpo.",
+      st[2] ? "La soluzione giusta, senza errori gravi." : !d || !d.done ? "Dialogo non concluso." : d.grave ? "C'è stato un errore grave: rileggi i commenti della titolare." : "La soluzione non era la migliore al primo colpo.",
     ];
   }
   function vEsito(lv: Level) {

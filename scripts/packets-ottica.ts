@@ -72,7 +72,7 @@ for (const lv of LEVELS) {
   });
   if (p) {
     md.push("## Prova", "");
-    if ("bet" in p) md.push("Qui sei al posto dell'optometrista, per capire come lavora la lente. In negozio questa prova la fa lui, non tu.", "", `Prima, scommetti: ${p.bet.q}`, ...p.bet.o.map(o => `- ${o}`), "", `Dopo la scommessa: ${p.goal.replace(/\{\w+\}/g, "…")}`, "");
+    if ("bet" in p) md.push("L'occhiale di prova: metti le lenti e guardi come vede il cliente. È una simulazione semplificata, per capire cosa fa la lente.", "", `Prima, scommetti: ${p.bet.q}`, ...p.bet.o.map(o => `- ${o}`), "", `Dopo la scommessa: ${p.goal.replace(/\{\w+\}/g, "…")}`, "");
     else md.push(p.goal, "");
     md.push(`Si gioca con: \`npx tsx scripts/negozio.ts ${lv.id} <seme> <<'FINE' … FINE\` (comandi: ${p.type === "ricetta" ? "ricetta, tocca <cella>, occhiale <tipo>, aiuto" : "scommessa, scommetti <n>, guarda <n>, " + (p.type === "asse" ? "asse <gradi>" : p.type === "vicino" ? "addizione <diottrie>" : "lente <diottrie>") + ", conferma, aiuto"}).`, "");
   }
@@ -84,7 +84,7 @@ for (const lv of LEVELS) {
 writeFileSync(join(OUT, "quaderno.md"), [
   "# Prova alla cieca · Sfera Cilindro Asse",
   "",
-  "Sei una persona nuova al banco di un negozio di ottica: non sai niente di ottica. Giochi un livello alla volta.",
+  "Sei un venditore esperto (conosci la PNL e vendi da anni) appena entrato in un negozio di ottica: di occhi e lenti non sai niente. Il corso non insegna a vendere: insegna l'ottica. Giochi un livello alla volta.",
   "Per ogni livello leggi `<id>.md` e guarda le foto. Poi giochi la prova e il banco con `npx tsx scripts/negozio.ts <id> <seme>` (un numero qualsiasi come seme), mandando i comandi da stdin.",
   "Il seme decide la ricetta del cliente e l'ordine delle risposte: con semi diversi giochi casi diversi (qualche seme può dare la stessa ricetta). Come nel gioco, si va avanti e non si torna indietro: prova, banco, domande.",
   "Gli aiuti stanno in `<id>-aiuti.md`: aprili solo se ti blocchi, e dillo.",
