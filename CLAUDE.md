@@ -4,6 +4,7 @@ Due corsi di formazione per Ray (Milano), nello stesso sito. Esce **un capitolo 
 
 - **Fase Neutro Terra** (`/elettricista`): l'impianto elettrico di casa, in cantiere.
 - **Sfera Cilindro Asse** (`/ottica`): il mestiere dell'ottico a 360 gradi, per chi sa già vendere (conosce la PNL, vende da anni). Il corso non insegna a vendere: insegna l'ottica. Pochissima teoria, molto da vedere, poi i casi al banco.
+- **Diottri** (in progettazione): un gioco di ruolo in stile Game Boy Color che insegna l'ottica giocando, accanto al corso di ottica. Progetto in `docs/gioco/PROGETTO.md`. Avrà una cartella sua, `src/diottri/`, e la pagina `/diottri`; i numeri dell'ottica li prende da `src/ottica/core`, senza cambiare come si comporta il corso.
 - La home `/` fa scegliere il corso e mostra le stelle di ognuno.
 - Sito: Next.js su Vercel, da questo repository (`main` si pubblica da solo).
 - Anteprime in un file solo: `npm run build:artifact` → `dist/fase-neutro-terra.html` e `dist/sfera-cilindro-asse.html` (si pubblicano come artifact su claude.ai).

@@ -19,6 +19,10 @@ Il mestiere dell'ottico a 360 gradi, per chi sa già vendere: il corso non inseg
 
 Piano in [`docs/ottica/CAPITOLI.md`](docs/ottica/CAPITOLI.md), regole degli esercizi in [`docs/ottica/STANDARD.md`](docs/ottica/STANDARD.md).
 
+## Diottri · in progettazione
+
+Un gioco di ruolo in stile Game Boy Color, accanto al corso di ottica: per imparare l'ottica giocando, anche un'ora di fila. Progetto in [`docs/gioco/PROGETTO.md`](docs/gioco/PROGETTO.md).
+
 ## Pubblicare
 
 Il sito è un'app Next.js: su Vercel basta importare il repository, senza configurazione. Ogni push su `main` passa dai controlli (GitHub Actions) e Vercel pubblica.
