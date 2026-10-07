@@ -31,6 +31,7 @@ export function occhiale(def: CasoDef, st: CasoState) {
   return {
     materiale: mat?.materiale ?? "cr39",
     antiriflesso: !!tr?.antiriflesso,
+    filtroBlu: !!tr?.filtroBlu,
     montatura: mon?.montatura ?? { calibro: 52, ponte: 18 },
     filtro,
     trasm: filtro ? CATEGORIE[filtro.categoria].tipico : CHIARA,
@@ -132,6 +133,12 @@ function valuta(def: CasoDef, st: CasoState, b: BisognoDef): Bisogno {
       const r = abbagliamentoAttuale(def, st);
       const n = taccheAbbagliamento(r);
       return { ...base, tacche: n, nota: n === 0 ? "riflesso ridotto" : n === 1 ? "il riflesso disturba" : "il riflesso acceca" };
+    }
+    case "schermi": {
+      // un uso, non un difetto: il difetto lo corregge la lente, il trattamento serve a come la usa
+      const o = occhiale(def, st);
+      const ok = o.filtroBlu || o.antiriflesso;
+      return { ...base, tacche: ok ? 0 : 1, nota: ok ? "un trattamento per lo schermo" : "niente per lo schermo" };
     }
     case "guida": {
       const f = occhiale(def, st).filtro;

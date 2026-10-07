@@ -364,7 +364,8 @@ Ogni mandata finisce come un capitolo del corso: controllo automatico, revisione
 5. **La prova della mandata 2** la fa Ray, giocando.
 6. **Il prontuario del corso** è corretto: allarme «subito» separato da «oggi stesso», e i bambini in una tabella della visita senza urgenza.
 
-**Da chiedere a Ray.** Il revisore di ottica della mandata 2 ricorda l'art. 12 del R.D. 1334/1928: alla lettera, gli ottici vendono senza prescrizione medica solo le lenti per miopia e presbiopia; ipermetropia, astigmatismo e afachia vogliono la ricetta. Il caso 2 (Giulia, ipermetrope di 28 anni) oggi misura e consegna un +2,00 senza ricetta. Se va cambiato, la strada più leggera: la misura resta, e il caso si chiude consigliando la visita per la ricetta («Torna con la ricetta»), come il bambino. Vale anche per i cilindri dei mondi dopo.
+7. **La misura dell'ottico basta** (Ray, dopo la revisione della mandata 2): in Italia non serve per forza la prescrizione del medico. L'ottico o l'optometrista non rilascia una prescrizione con le diottrie, ma con la sua misura confeziona l'occhiale. Il caso 2 (Giulia, +2,00 misurato in bottega) resta così.
+8. **I trattamenti servono al cliente** (Ray): non correggono quasi mai il difetto, che lo corregge la lente, ma rispondono a come il cliente usa l'occhiale. Un trattamento che risponde a un uso è «Bene»: a chi sta al computer il filtro luce blu. Nel caso l'uso è un bisogno da scoprire chiedendo («Al computer»).
 
 ## La mandata 2, com'è uscita
 

@@ -178,6 +178,28 @@ describe("Diottri · il caso", () => {
     expect(K.dubbioAperto(c2, st)).toBeNull();
   });
 
+  it("i trattamenti non correggono il difetto, ma servono al cliente: al computer il filtro è «Bene»", () => {
+    const c2 = caso("c2"), st = K.nuovoCaso(c2, 2, vassoioPrima("c2"));
+    const schermi = () => bisogni(c2, st).find(b => b.tipo === "schermi")!;
+    expect(schermi().visibile).toBe(false);
+    K.chiedi(c2, st, "quando");
+    expect(schermi().visibile).toBe(true);
+    expect(schermi().tacche).toBe(1);
+    K.metti(c2, st, "trattamento", "blu");
+    expect(ultimo(st).esito).toBe("bene");
+    expect(schermi().tacche).toBe(0);
+    expect(st.stelle.soluzione).toBe(true);
+    // senza chiedere, il computer salta fuori alla consegna
+    const b = K.nuovoCaso(c2, 2, vassoioPrima("c2"));
+    K.chiedi(c2, b, "segni");
+    K.chiedi(c2, b, "dove");
+    provaGiusta(c2, b);
+    K.mostra(c2, b, "lavora");
+    K.consegna(c2, b);
+    expect(b.fine).toBeNull();
+    expect(b.perse.spiegazione).toBe("una domanda mancata: «Da quando?»");
+  });
+
   it("senza Bombo, l'ipermetrope non si misura con la prova", () => {
     const c2 = caso("c2"), st = K.nuovoCaso(c2, 2, VASSOIO_INIZIO);
     K.apriProva(c2, st);

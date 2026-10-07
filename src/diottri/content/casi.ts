@@ -41,7 +41,7 @@ export const CASI: CasoDef[] = [
       materiale: MAT_POCHE,
       trattamento: [
         { id: "no", nome: "Nessuno", esito: "bene", perche: "Qui non serve altro.", antiriflesso: false },
-        { id: "blu", nome: "Filtro luce blu", esito: "ok", perche: "Si può offrire, ma alla vista non serve.", filtroBlu: true },
+        { id: "blu", nome: "Filtro luce blu", esito: "bene", perche: "Si può offrire: per gli schermi è una comodità.", filtroBlu: true },
       ],
       montatura: [{ id: "sua", nome: "La sua, 50□18", esito: "bene", perche: "La sua montatura va bene.", montatura: { calibro: 50, ponte: 18 } }],
     },
@@ -67,19 +67,22 @@ export const CASI: CasoDef[] = [
     varianti: [{ od: s(1.75), os: s(1.75) }, { od: s(2), os: s(2) }, { od: s(2), os: s(2.25) }, { od: s(2.25), os: s(2.25) }],
     dp: 61,
     scena: "giornale", scenaProva: "strada",
-    bisogni: [{ tipo: "vicino", nome: "Vicino", d: 0.4 }, { tipo: "lontano", nome: "Lontano" }],
+    bisogni: [{ tipo: "vicino", nome: "Vicino", d: 0.4 }, { tipo: "lontano", nome: "Lontano" }, { tipo: "schermi", nome: "Al computer", nascosto: true }],
     domande: [
       { id: "segni", testo: "Mal di testa forte?", risposta: "No, leggero, la sera. Mai con la vista appannata.", chiave: true },
       { id: "dove", testo: "Lontano o vicino?", risposta: "Da vicino mi stanco. Lontano benissimo.", chiave: true },
-      { id: "quando", testo: "Da quando?", risposta: "Da quando sto tanto al computer." },
+      { id: "quando", testo: "Da quando?", risposta: "Da quando sto tanto al computer.", rivela: "schermi" },
       { id: "occhiali", testo: "Porta occhiali?", risposta: "No, mai portati." },
       { id: "vede", testo: "Ci vede bene?", risposta: "Gliel'ho detto: benissimo!", giaDetto: true },
     ],
     posti: {
       materiale: MAT_POCHE,
       trattamento: [
-        { id: "no", nome: "Nessuno", esito: "bene", perche: "Qui l'aiuto è il più: fa lavorare meno l'occhio.", antiriflesso: false },
-        { id: "blu", nome: "Filtro luce blu", esito: "no", perche: "Il filtro blu non fa lavorare meno l'occhio: il più sì.", filtroBlu: true },
+        {
+          id: "no", nome: "Nessuno", esito: "bene", perche: "Il difetto lo corregge il più.", antiriflesso: false,
+          seScoperto: { rivela: "schermi", esito: "ok", perche: "Sta tanto al computer: per lo schermo le serve un trattamento." },
+        },
+        { id: "blu", nome: "Filtro luce blu", esito: "bene", perche: "Al computer è una comodità; il difetto lo corregge il più.", filtroBlu: true },
       ],
       montatura: [{ id: "nuova", nome: "Nuova, 52□18", esito: "bene", perche: "Una montatura nuova: va bene.", montatura: { calibro: 52, ponte: 18 } }],
     },
@@ -92,7 +95,7 @@ export const CASI: CasoDef[] = [
     }],
     aiuti: {
       prova: "Il più più forte con cui il lontano resta nitido.",
-      posti: { trattamento: "Lo sforzo lo riduce il più, non un filtro." },
+      posti: { trattamento: "Il più corregge l'occhio; il trattamento serve allo schermo." },
       mostra: "Fai vedere quanto lavora l'occhio, con e senza lente.",
     },
     ciVedo: "Che differenza! E il telefono è nitido.",

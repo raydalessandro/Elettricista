@@ -70,7 +70,7 @@ export interface Opzione {
   seScoperto?: { rivela: Rivela; esito: Esito; perche: string };
 }
 
-export type BisognoTipo = "lontano" | "vicino" | "spessore" | "riflessi" | "sole" | "abbagliamento" | "guida" | "dubbio";
+export type BisognoTipo = "lontano" | "vicino" | "spessore" | "riflessi" | "sole" | "abbagliamento" | "guida" | "schermi" | "dubbio";
 
 export interface BisognoDef {
   tipo: BisognoTipo;
