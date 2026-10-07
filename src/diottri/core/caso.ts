@@ -237,7 +237,7 @@ export function confermaProva(def: CasoDef, st: CasoState) {
     say(st, "iride", `${nome}: ${diop(p.v)}. ${g.t}`, "bene");
   } else {
     perde(st, "occhio", "la prova lenti confermata sbagliata");
-    const n = errore(st, `prova:${o}`, def.aiuti.prova || (eye.rx.sph < 0 ? "Cerca il meno più leggero con cui è nitido." : "Cerca il più più forte con cui è ancora nitido."));
+    const n = errore(st, `prova:${o}`, def.aiuti.prova || (eye.rx.sph < 0 ? "Cerca il meno più leggero con cui è nitido." : "Cerca il più positivo con cui è ancora nitido."));
     say(st, "iride", g.t, "no");
     if (n >= 3) {
       st.soluzioneMostrata = true;

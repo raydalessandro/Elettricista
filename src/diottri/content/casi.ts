@@ -9,8 +9,8 @@ const s = (sph: number) => ({ ...PLANO, sph });
 
 const MAT_POCHE: Opzione[] = [
   { id: "cr39", nome: "Organico 1,5", esito: "bene", perche: "Con poche diottrie l'1,5 va benissimo.", materiale: "cr39" },
-  { id: "i160", nome: "Organico 1,6", esito: "ok", perche: "Con poche diottrie l'indice alto toglie poco spessore.", materiale: "i160" },
-  { id: "i167", nome: "Organico 1,67", esito: "ok", perche: "Con poche diottrie l'indice alto toglie poco spessore.", materiale: "i167" },
+  { id: "i160", nome: "Organico 1,6", esito: "ok", perche: "Con poche diottrie un indice più alto toglie poco spessore.", materiale: "i160" },
+  { id: "i167", nome: "Organico 1,67", esito: "ok", perche: "Con poche diottrie un indice più alto toglie poco spessore.", materiale: "i167" },
   { id: "pc", nome: "Policarbonato", esito: "ok", perche: "Regge gli urti, ma qui non serviva.", materiale: "pc" },
 ];
 
@@ -27,7 +27,7 @@ export const CASI: CasoDef[] = [
     occhio: { od: s(-1.75), os: s(-2) },
     varianti: [{ od: s(-1.5), os: s(-1.75) }, { od: s(-1.75), os: s(-2) }, { od: s(-2), os: s(-2.25) }, { od: s(-2.25), os: s(-2.5) }],
     dp: 63,
-    vecchi: { od: s(-1.25), os: s(-1.25), vedeBene: false, frase: "Con questi il tabellone è una nebbia." },
+    vecchi: { od: s(-1.25), os: s(-1.25), vedeBene: false, frase: "Con questi il tabellone è sfocato." },
     scena: "tabellone", scenaProva: "tabellone",
     bisogni: [{ tipo: "lontano", nome: "Lontano" }],
     domande: [
@@ -40,7 +40,7 @@ export const CASI: CasoDef[] = [
     posti: {
       materiale: MAT_POCHE,
       trattamento: [
-        { id: "no", nome: "Nessuno", esito: "bene", perche: "Qui non serve altro.", antiriflesso: false },
+        { id: "no", nome: "Solo indurente", esito: "bene", perche: "Qui non serve altro.", antiriflesso: false },
         { id: "blu", nome: "Filtro luce blu", esito: "bene", perche: "Si può offrire: per gli schermi è una comodità.", filtroBlu: true },
       ],
       montatura: [{ id: "sua", nome: "La sua, 50□18", esito: "bene", perche: "La sua montatura va bene.", montatura: { calibro: 50, ponte: 18 } }],
@@ -79,7 +79,7 @@ export const CASI: CasoDef[] = [
       materiale: MAT_POCHE,
       trattamento: [
         {
-          id: "no", nome: "Nessuno", esito: "bene", perche: "Il difetto lo corregge il più.", antiriflesso: false,
+          id: "no", nome: "Solo indurente", esito: "bene", perche: "Il difetto lo corregge il più.", antiriflesso: false,
           seScoperto: { rivela: "schermi", esito: "ok", perche: "Sta tanto al computer: per lo schermo le serve un trattamento." },
         },
         { id: "blu", nome: "Filtro luce blu", esito: "bene", perche: "Al computer è una comodità; il difetto lo corregge il più.", filtroBlu: true },
@@ -94,11 +94,11 @@ export const CASI: CasoDef[] = [
       risposta: "Senza lente l'occhio lavora sempre; col più lavora meno.",
     }],
     aiuti: {
-      prova: "Il più più forte con cui il lontano resta nitido.",
+      prova: "Il più positivo con cui il lontano resta nitido.",
       posti: { trattamento: "Il più corregge l'occhio; il trattamento serve allo schermo." },
       mostra: "Fai vedere quanto lavora l'occhio, con e senza lente.",
     },
-    ciVedo: "Che differenza! E il telefono è nitido.",
+    ciVedo: "Che differenza! Da vicino è tutto più comodo.",
     fine: "Anche chi ci vede bene può avere bisogno del più.",
   },
 
@@ -113,7 +113,7 @@ export const CASI: CasoDef[] = [
     },
     occhio: { od: s(-5.5), os: s(-5.75) },
     dp: 62,
-    vecchi: { od: s(-5), os: s(-5.25), vedeBene: false, frase: "Di giorno ancora ci vedo, di notte meno." },
+    vecchi: { od: s(-5), os: s(-5.25), vedeBene: false, frase: "Di giorno così così, di notte peggio." },
     ricetta: { od: s(-5.5), os: s(-5.75), quando: "un mese fa", nascosta: true },
     scena: "notte", scenaProva: "notte",
     bisogni: [{ tipo: "lontano", nome: "Lontano" }, { tipo: "spessore", nome: "Spessore" }, { tipo: "riflessi", nome: "Riflessi", nascosto: true }],
@@ -133,11 +133,11 @@ export const CASI: CasoDef[] = [
         { id: "pc", nome: "Policarbonato", esito: "ok", perche: "Più sottile dell'1,5, ma meno dell'1,67.", materiale: "pc" },
       ],
       trattamento: [
-        { id: "no", nome: "Nessuno", esito: "no", perche: "Di notte, in autostrada, senza antiriflesso i riflessi restano.", antiriflesso: false },
+        { id: "no", nome: "Solo indurente", esito: "no", perche: "Di notte, in autostrada, senza antiriflesso i riflessi restano.", antiriflesso: false },
         { id: "ar", nome: "Antiriflesso", esito: "bene", perche: "Di notte toglie quasi tutti i riflessi della lente.", antiriflesso: true, serve: "verdino" },
       ],
       montatura: [
-        { id: "sua", nome: "La sua, 56□18", esito: "no", perche: "Calibro grande e centri lontani dagli occhi: bordo spesso.", montatura: { calibro: 56, ponte: 18 } },
+        { id: "sua", nome: "La sua, 56□18", esito: "ok", perche: "Calibro grande e centri lontani dalle pupille: il bordo resta spesso.", montatura: { calibro: 56, ponte: 18 } },
         { id: "m50", nome: "Più piccola, 50□18", esito: "bene", perche: "Più piccolo il calibro, più sottile la lente.", montatura: { calibro: 50, ponte: 18 } },
       ],
     },
@@ -157,7 +157,7 @@ export const CASI: CasoDef[] = [
       },
       mostra: "Fai vedere la lente di lato.",
     },
-    ciVedo: "Sottili! E di notte niente più riflessi.",
+    ciVedo: "Sottili! E di notte molti meno riflessi.",
     fine: "Calibro piccolo e indice alto; con l'indice alto, l'antiriflesso.",
   },
 
@@ -185,7 +185,7 @@ export const CASI: CasoDef[] = [
     posti: {
       materiale: [
         { id: "cr39", nome: "Organico 1,5", esito: "bene", perche: "Con poche diottrie l'1,5 va benissimo.", materiale: "cr39" },
-        { id: "pc", nome: "Policarbonato", esito: "ok", perche: "Regge gli urti, ma qui non serviva.", materiale: "pc" },
+        { id: "pc", nome: "Policarbonato", esito: "bene", perche: "Pescando volano ami e piombi: il policarbonato regge gli urti.", materiale: "pc" },
       ],
       filtro: [
         { id: "no", nome: "Nessuno", esito: "no", perche: "Al lago a mezzogiorno serve una lente da sole.", filtro: null },
@@ -205,7 +205,7 @@ export const CASI: CasoDef[] = [
       id: "schermo", quando: "polarizzata",
       domanda: "Col telefono lo schermo diventa nero: è rotta?",
       mostra: [{ id: "polarizzate", esito: "risponde" }, { id: "dilato", esito: "fuori" }, { id: "goccia", esito: "fuori" }],
-      risposta: "Non è rotta: lo schermo manda luce polarizzata, e lei la ferma.",
+      risposta: "Non è rotta: lo schermo manda luce polarizzata, e la lente la ferma.",
     }],
     aiuti: {
       posti: { filtro: "Sull'acqua serve la polarizzata; alla guida mai la 4." },
@@ -240,7 +240,7 @@ export const CASI: CasoDef[] = [
     // l'occhiale c'è come negli altri casi: l'allarme si scopre chiedendo, non guardando lo schermo
     posti: {
       materiale: [{ id: "cr39", nome: "Organico 1,5", esito: "bene", perche: "Con poche diottrie l'1,5 va benissimo.", materiale: "cr39" }],
-      trattamento: [{ id: "no", nome: "Nessuno", esito: "bene", perche: "Qui non serve altro.", antiriflesso: false }],
+      trattamento: [{ id: "no", nome: "Solo indurente", esito: "bene", perche: "Qui non serve altro.", antiriflesso: false }],
       montatura: [{ id: "sua", nome: "La sua, 52□18", esito: "bene", perche: "La sua montatura va bene.", montatura: { calibro: 52, ponte: 18 } }],
     },
     serveLente: false,

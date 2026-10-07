@@ -46,7 +46,7 @@ const SERA: Record<string, Tavolozza> = {
   ardesia: ["#6a78a0", "#50608c", "#3a4a74", "#1c2444"],
   vetro: ["#fff4c0", "#f8d878", "#c8a050", "#4a3a40"],
   ferro: ["#9a9cb0", "#7a7c94", "#585a74", "#262838"],
-  bottega: ["#c8c4c8", "#3c7c84", "#285c68", "#0c1c2c"],
+  bottega: ["#b4b0c4", "#3c7c84", "#285c68", "#0c1c2c"],
   insegna: ["#b0aac0", "#a04868", "#34508c", "#121a30"],
   auto: ["#a08ca0", "#8a4a5c", "#5c2c40", "#24142a"],
   carta: ["#c8c4d0", "#a4a0b4", "#6c6884", "#262438"],
@@ -71,17 +71,19 @@ const INTERNO: Record<string, Tavolozza> = {
   oro: GIORNO.oro,
 };
 
-/** I personaggi: «.» trasparente; 1 pelle, 2 vestiti, 3 capelli e contorno. Il colore 0 non si usa. */
+/** I personaggi: «.» trasparente; 1 pelle, 2 vestiti, 3 capelli e contorno. Il colore 0 non si usa.
+    Luisa fa eccezione, perché i capelli bianchi non si confondano col viso: 1 i capelli bianchi (e la camicetta),
+    2 la pelle, 3 il golfino viola scuro e il contorno. */
 export const FIGURE_PAL: Record<string, Tavolozza> = {
-  tu_uomo: ["#000000", "#f0c8a0", "#2f7d6d", "#2a2420"],
-  tu_donna: ["#000000", "#f6d0b0", "#2f7d6d", "#3a2418"],
+  tu_uomo: ["#000000", "#f0c8a0", "#3a8c7a", "#2a2420"],
+  tu_donna: ["#000000", "#f6d0b0", "#3a8c7a", "#3a2418"],
   iride: ["#000000", "#f2c8a4", "#8a3c5c", "#4a2c1c"],
   marco: ["#000000", "#e8b48f", "#3f6fb5", "#2a1e16"],
-  giulia: ["#000000", "#f1c7a3", "#c9506a", "#6a3018"],
+  giulia: ["#000000", "#f4cba8", "#e86888", "#7a3418"],
   davide: ["#000000", "#d9a07a", "#5a6a80", "#1f1a17"],
   paolo: ["#000000", "#c98b62", "#5f7f3a", "#3a2c1c"],
-  luisa: ["#000000", "#f4e8e0", "#7b5ea7", "#2e2a3a"],
-  passante: ["#000000", "#e8b896", "#c07a2c", "#3a2a20"],
+  luisa: ["#000000", "#f4f0f8", "#f0c4a4", "#583878"],
+  passante: ["#000000", "#e8b896", "#e07c28", "#3a2a20"],
   oro: GIORNO.oro,
 };
 

@@ -43,6 +43,7 @@ export function creaGuscio(c: Collegamenti) {
   let tenuto: Dir | null = null;
   let giratoA = 0;
   let mossa: { da: [number, number]; t0: number } | null = null;
+  let passi = 0; // per alternare le gambe
   let occupato = false; // un evento in corso: niente passi
   let versi: Record<string, Dir> = {};
   let menuAperto = false;
@@ -349,7 +350,7 @@ export function creaGuscio(c: Collegamenti) {
     }
     if (ora - giratoA < GIRO_MS) return;
     const p = passo(m, st, d, ctx, false);
-    if (p.esito === "mosso") mossa = { da: prima, t0: ora };
+    if (p.esito === "mosso") { mossa = { da: prima, t0: ora }; passi++; }
     else if (p.esito === "porta") { tenuto = null; void (async () => { occupato = true; try { await vai(p.porta.verso); } finally { occupato = false; } })(); }
     else if (p.esito === "chiusa") { tenuto = null; void evento([{ dice: p.testo }]); }
   }
@@ -383,11 +384,10 @@ export function creaGuscio(c: Collegamenti) {
       const k = Math.min(1, (ora - mossa.t0) / PASSO_MS);
       px = (mossa.da[0] + (st.x - mossa.da[0]) * k) * CELLA;
       py = (mossa.da[1] + (st.y - mossa.da[1]) * k) * CELLA;
-      passoN = k > 0.25 && k < 0.75 ? 1 : 0;
-      if (((st.x + st.y) & 1) === 1 && passoN === 1) passoN = 1;
+      passoN = k > 0.2 && k < 0.8 ? 1 : 0;
     }
     const luce = m.fuori ? fase(ctx) : "interno";
-    const f = componi({ m, luce, ctx, tu: { px, py, dir: st.dir, passo: passoN, figura: c.chi() === "donna" ? "tu_donna" : "tu_uomo" }, versi, t: ora });
+    const f = componi({ m, luce, ctx, tu: { px, py, dir: st.dir, passo: passoN, figura: c.chi() === "donna" ? "tu_donna" : "tu_uomo", alterna: passi % 2 === 1 }, versi, t: ora });
     g1.putImageData(new ImageData(f.sfondo.data, SCHERMO_W, SCHERMO_H), 0, 0);
     g2.clearRect(0, 0, SCHERMO_W, SCHERMO_H);
     g2.putImageData(new ImageData(f.primo.data, SCHERMO_W, SCHERMO_H), 0, 0);
@@ -403,9 +403,17 @@ export function creaGuscio(c: Collegamenti) {
     /** per i test: premi un tasto, cammina di un passo, guarda lo stato */
     premi,
     cammina,
+    /** la croce nelle scelte e nel menu (fuori, tenerla premuta fa camminare: lì si usa cammina) */
+    scorri(d: Dir) { if ((scelta && attesa) || menuAperto) premiDir(d); },
     get attesa() { return !!attesa; },
     get scelta() { return scelta ? [...scelta.voci] : null; },
     get testo() { return q<HTMLElement>(".gb-testo")?.dataset.pieno ?? ""; },
+    /** il riquadro: chi parla e il testo intero, se è aperto; e se il testo è già scritto tutto */
+    get riquadro() { const r = q<HTMLElement>(".gb-riquadro"); return r && !r.hidden ? { chi: q<HTMLElement>(".gb-chi")?.textContent ?? "", testo: q<HTMLElement>(".gb-testo")?.dataset.pieno ?? "" } : null; },
+    get pieno() { return testoPieno; },
+    get indiceScelta() { return scelta ? scelta.i : -1; },
+    get menu() { return menuAperto ? [...(q(".gb-menu")?.querySelectorAll<HTMLElement>("[data-voce]") ?? [])].map(v => ({ voce: v.dataset.voce!, testo: v.textContent ?? "", on: v.classList.contains("on") })) : null; },
+    get velo() { const v = q<HTMLElement>(".gb-velo"); return v && !v.hidden ? (v.textContent ?? "") : ""; },
     stato: st,
     DELTA,
   };

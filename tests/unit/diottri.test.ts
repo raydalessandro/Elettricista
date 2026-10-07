@@ -341,9 +341,10 @@ describe("Diottri · il caso", () => {
     K.chiedi(c3, st, "ricetta");
     K.apriRicetta(c3, st);
     for (const c of K.caselleRicetta(c3)) K.toccaRicetta(c3, st, c);
-    K.metti(c3, st, "montatura", "m50");
+    K.metti(c3, st, "trattamento", "ar"); // con l'antiriflesso i riflessi non contano più: conta solo lo spessore
+    K.metti(c3, st, "materiale", "i167");
     const f = st.fiducia;
-    K.metti(c3, st, "montatura", "sua"); // torna al calibro grande: lo spessore cresce
+    K.metti(c3, st, "materiale", "cr39"); // torna all'1,5: lo spessore cresce
     expect(ultimo(st).esito).toBe("no");
     expect(st.fiducia).toBe(f - 2);
   });

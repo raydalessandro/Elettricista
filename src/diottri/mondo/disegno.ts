@@ -56,11 +56,13 @@ export function bitmapOggetto(id: string, luce: Luce): Bitmap {
   });
 }
 
-export function bitmapFigura(id: string, dir: Dir, passo: number): Bitmap {
-  return memo(`f|${id}|${dir}|${passo}`, () => {
+/** Un fotogramma di una figura. Con `alterna`, di fronte e di spalle il passo è allo specchio: si alternano le gambe. */
+export function bitmapFigura(id: string, dir: Dir, passo: number, alterna = false): Bitmap {
+  const specchio = dir === "destra" || (alterna && passo % 2 === 1 && (dir === "giu" || dir === "su"));
+  return memo(`f|${id}|${dir}|${passo}|${specchio}`, () => {
     const f = FIGURE[id] ?? FIGURE.passante;
     const verso = dir === "giu" ? f.giu : dir === "su" ? f.su : f.lato;
-    return dipingi(verso[passo % 2], FIGURE_PAL[f.pal] ?? MAGENTA, CELLA, CELLA, dir === "destra");
+    return dipingi(verso[passo % 2], FIGURE_PAL[f.pal] ?? MAGENTA, CELLA, CELLA, specchio);
   });
 }
 
@@ -75,7 +77,7 @@ export interface Scena {
   luce: Luce;
   ctx: Contesto;
   /** chi gioca: posizione in pixel (angolo in alto a sinistra), direzione, passo, figura */
-  tu: { px: number; py: number; dir: Dir; passo: number; figura: string };
+  tu: { px: number; py: number; dir: Dir; passo: number; figura: string; alterna?: boolean };
   /** direzione dei personaggi che si sono girati a parlare */
   versi?: Record<string, Dir>;
   /** tempo in millisecondi, per l'acqua e i luccichii */
@@ -134,9 +136,9 @@ export function componi(sc: Scena, W = SCHERMO_W, H = SCHERMO_H, cam?: [number, 
 
   // i personaggi e chi gioca, dall'alto in basso
   const figure: { y: number; b: Bitmap; px: number; py: number }[] = personaggiPresenti(m, ctx).map(p => ({
-    y: p.y * CELLA, b: bitmapFigura(p.figura, sc.versi?.[p.id] ?? p.dir, Math.floor(t / 700) % 2 === 0 ? 0 : 0), px: p.x * CELLA, py: p.y * CELLA,
+    y: p.y * CELLA, b: bitmapFigura(p.figura, sc.versi?.[p.id] ?? p.dir, 0), px: p.x * CELLA, py: p.y * CELLA,
   }));
-  figure.push({ y: sc.tu.py, b: bitmapFigura(sc.tu.figura, sc.tu.dir, sc.tu.passo), px: sc.tu.px, py: sc.tu.py });
+  figure.push({ y: sc.tu.py, b: bitmapFigura(sc.tu.figura, sc.tu.dir, sc.tu.passo, sc.tu.alterna), px: sc.tu.px, py: sc.tu.py });
   figure.sort((a, b) => a.y - b.y);
   for (const f of figure) incolla(primo, f.b, Math.round(f.px - cx), Math.round(f.py - cy) - 2);
 

@@ -1,6 +1,9 @@
 /* Controllo automatico dello standard di Diottri (docs/gioco/STANDARD.md, regole G1–G9).
    Lo usano npm run standard e i test: con un errore la mandata non esce. */
 import { CASI, INTRO_PROVE, ORDINE, RICONOSCIMENTI, SPECIE, vassoioPrima } from "../content";
+import { MAPPE } from "../content/borgo";
+import { apreEvento, testiEvento } from "../mondo/motore";
+import type { Comando, Evento } from "../mondo/tipi";
 import { lenteServe, riuscito, soluzioneProva } from "../core/caso";
 import { quarti } from "../core/rng";
 import { risolviCaso, risolviRic } from "../core/risolutore";
@@ -163,6 +166,30 @@ export function validateDiottri(): Finding[] {
     if (boxes.length > 2) out.push({ lv: `prova ${p}`, code: "G1", sev: "errore", msg: "più di due riquadri di spiegazione" });
     for (const t of boxes) if (!stanno(t)) out.push({ lv: `prova ${p}`, code: "G1", sev: "errore", msg: `«${t}» non sta in tre righe da ${COLONNE}` });
   }
+  // G1 e G8 · i testi del mondo: dialoghi, cartelli, porte chiuse; le scelte stanno in una riga corta
+  const scelte = (ev: Evento): string[] => (ev as Comando[]).flatMap(c => ("scelta" in c ? [...c.voci.map(v => v.testo), ...c.voci.flatMap(v => scelte(v.fai))] : "se" in c ? [...scelte(c.allora), ...scelte(c.altrimenti ?? [])] : []));
+  for (const m of Object.values(MAPPE)) {
+    const f = (code: string, msg: string) => out.push({ lv: `mondo ${m.id}`, code, sev: "errore", msg });
+    const eventi: Evento[] = [
+      ...m.personaggi.flatMap(p => p.parla.map(b => b.fai)),
+      ...m.cose.flatMap(c => c.tocca.map(b => b.fai)),
+      ...(m.entrando ?? []).map(b => b.fai),
+      ...m.porte.filter(p => p.chiusa).map(p => [{ dice: p.chiusa! }] as Evento),
+    ];
+    for (const ev of eventi) {
+      for (const t of testiEvento(ev)) {
+        if (!stanno(t)) f("G1", `«${t}» non sta in tre righe da ${COLONNE}`);
+        const x = nelNero(t);
+        if (x) f("G8", `«${t}»: «${x}»`);
+      }
+      for (const v of scelte(ev)) if (v.length > 20) f("G1", `la scelta «${v}» è più lunga di 20 caratteri`);
+      for (const id of apreEvento(ev)) if (!ORDINE.some(o => o.id === id)) f("G2", `l'evento apre «${id}», che non è nel percorso`);
+    }
+  }
+  // ogni passo del percorso si apre da qualche parte nel mondo
+  const aperti = new Set(Object.values(MAPPE).flatMap(m => [...m.personaggi.flatMap(p => p.parla.flatMap(b => apreEvento(b.fai))), ...m.cose.flatMap(c => c.tocca.flatMap(b => apreEvento(b.fai)))]));
+  for (const o of ORDINE) if (!aperti.has(o.id)) out.push({ lv: `mondo`, code: "G2", sev: "errore", msg: `nessuno nel mondo apre «${o.id}»` });
+
   // l'ordine contiene tutto, una volta
   const ids = ORDINE.map(o => o.id);
   for (const c of CASI) if (!ids.includes(c.id)) out.push({ lv: c.id, code: "G2", sev: "errore", msg: "il caso non è nell'ordine" });

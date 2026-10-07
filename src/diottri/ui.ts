@@ -95,7 +95,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
         caso: apriDalMondo,
         ric: apriDalMondo,
         salva: () => { if (prog.mondo?.segni.includes("prologo")) prog.benvenuto = true; save(); },
-        esci: v => { S.ritorno = "mondo"; if (v === "vassoio") ACTS.vassoio(""); else S.screen = "home"; render(); window.scrollTo(0, 0); },
+        esci: v => { if (v === "vassoio") { S.ritorno = "mondo"; ACTS.vassoio(""); } else ACTS.percorso(""); render(); window.scrollTo(0, 0); },
       });
     }
     return guscio;
@@ -132,7 +132,8 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
   const NOTA_POSTO: Partial<Record<PostoId, string>> = {
     materiale: "1,5 · 1,6 · 1,67 · 1,74 è l'indice: più è alto, più la lente è sottile. Il policarbonato regge gli urti.",
     montatura: "52□18: la larghezza della lente (il calibro) e il ponte, in millimetri.",
-    filtro: "La categoria va da 0 a 4: più è alta, più è scura. La 4 mai alla guida.",
+    filtro: "La categoria va da 0 a 4: più è alta, più è scura. La 3 per mare e lago; la 4 per ghiacciaio e alta montagna, mai alla guida.",
+    trattamento: "La lente corregge il difetto; il trattamento serve a come la usa: schermo, notte, foto.",
   };
 
   /** Le stelle perse, e perché: una riga per momento. */
@@ -271,7 +272,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
       return sheet("Medico", `<p class="nota">Con un allarme non si misura: si sceglie qui.</p><div class="lista">` +
         `<button class="opz" data-act="medico" data-arg="subito"><b>Medico, subito</b><small>pronto soccorso adesso, o il 112</small><small class="se">Se: vista calata o doppia all'improvviso, un prodotto chimico, una ferita.</small></button>` +
         `<button class="opz" data-act="medico" data-arg="oggi"><b>Medico, oggi</b><small>oculista o pronto soccorso, in giornata</small><small class="se">Se: dolore o occhio rosso, lampi o una tenda nuovi, righe storte, un colpo.</small></button>` +
-        `<button class="opz" data-act="sheet" data-arg="visita"><b>Consiglia la visita</b><small>dall'oculista, senza urgenza: si misura lo stesso</small><small class="se">Se: un bambino, decimi che non arrivano, una gradazione che cambia in fretta.</small></button></div>`);
+        `<button class="opz" data-act="sheet" data-arg="visita"><b>Consiglia la visita</b><small>dall'oculista, senza urgenza: all'adulto si misura lo stesso</small><small class="se">Se: decimi che non arrivano, una gradazione che cambia in fretta. Un bambino senza ricetta: solo la visita.</small></button></div>`);
     }
     if (sh === "visita") {
       return sheet("Il motivo della visita", `<div class="lista">${(Object.keys(MOTIVO_NOME) as Motivo[]).map(m => `<button class="opz" data-act="visita" data-arg="${m}"><b>${esc(MOTIVO_NOME[m])}</b></button>`).join("")}</div>`);
@@ -480,6 +481,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
     ok: () => { prog.benvenuto = true; save(); S.ritorno = "home"; ACTS.apri(ORDINE[0].id); },
     home: () => { torna(); },
     mondo: () => { S.ritorno = "mondo"; S.risolvi = null; S.screen = "mondo"; },
+    percorso: () => { S.ritorno = "mondo"; S.screen = "home"; },
     vassoio: () => { S.screen = "vassoio"; S.conferma = false; },
     apri: id => {
       if (S.screen === "home") S.ritorno = "home";

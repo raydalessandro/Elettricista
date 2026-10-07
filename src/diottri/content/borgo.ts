@@ -65,7 +65,7 @@ function cliente(id: string, se: Condizione | undefined, prima: string, dopo: Ev
       fai: [
         { dice: testo, chi: nome },
         {
-          scelta: "Lo misuri in bottega?",
+          scelta: "Andiamo in bottega?",
           voci: [
             { testo: "Sì, andiamo!", fai: [{ caso: id }, { se: { fatti: [id] }, allora: dopo, altrimenti: [{ dice: "Riproviamo quando vuoi: non ho fretta.", chi: nome }] }] },
             { testo: "Dopo.", fai: [] },
@@ -76,7 +76,7 @@ function cliente(id: string, se: Condizione | undefined, prima: string, dopo: Ev
     {
       fai: [
         { dice: grazieTesto, chi: nome },
-        { scelta: "Rifate la prova?", voci: [{ testo: "Sì, rifacciamola.", fai: [{ caso: id }] }, { testo: "No, grazie.", fai: [] }] },
+        { scelta: "Rifacciamo la prova?", voci: [{ testo: "Sì, rifacciamola.", fai: [{ caso: id }] }, { testo: "No, grazie.", fai: [] }] },
       ],
     },
   ].map(b => ({ ...b, se: { ...(se ?? {}), ...(b.se ?? {}) } }));
@@ -153,19 +153,19 @@ const BORGO: MappaDef = {
       parla: cliente("c2", undefined,
         "Giulia: Ci vedo benissimo, ma la sera ho gli occhi stanchi.",
         [
-          { dice: "Che differenza! E il telefono è nitido.", chi: "Giulia" },
+          { dice: "Che differenza! Da vicino è tutto più comodo.", chi: "Giulia" },
           { dice: "Stasera, nel vicolo dei lampioni, ho visto un luccichio verde.", chi: "Giulia" },
           { buio: "Si fa sera." },
         ],
-        "Giulia: Al computer adesso lavoro tranquilla."),
+        "Giulia: Al computer adesso sto più comoda."),
     },
     {
       id: "davide", figura: "davide", x: 4, y: 23, dir: "sinistra", siGira: true,
       se: { fatti: ["r2"] },
       parla: cliente("c3", undefined,
-        "Davide: I miei occhiali sono fondi di bottiglia. E di notte, che riflessi!",
+        "Davide: I miei occhiali sono fondi di bottiglia!",
         [
-          { dice: "Sottili! E niente più riflessi.", chi: "Davide" },
+          { dice: "Sottili! E molti meno riflessi.", chi: "Davide" },
           { dice: "Domattina passo dal lago: sulla sabbia brilla qualcosa.", chi: "Davide" },
           { buio: "È mattina." },
         ],
@@ -207,6 +207,33 @@ const BORGO: MappaDef = {
   ],
 };
 
+/* ---------- il prologo, nella bottega ---------- */
+
+const PROLOGO_MISURA: Evento = [
+  { dice: "Buongiorno! Da lontano sfocato, e da vicino bene?", chi: IRIDE },
+  { scelta: "Rispondi", voci: [{ testo: "Sì, è così.", fai: [] }, { testo: "Come lo sa?", fai: [{ dice: "Strizzi gli occhi verso la strada.", chi: IRIDE }] }] },
+  { dice: "Niente dolore, né lampi? La gradazione non si indovina: si misura.", chi: IRIDE },
+];
+const PROLOGO_LENTI: Evento = [
+  { dice: "Con −1,25 la strada è nitida, e l'occhio riposa." },
+  { dice: "Ecco Conca, la lente col meno: è la sua. E Bruno, le lenti da sole.", chi: IRIDE },
+  { dice: "Coi clienti ci sa fare, si vede. Vuole imparare il mestiere?", chi: IRIDE },
+  { scelta: "Rispondi", voci: [{ testo: "Sì!", fai: [] }, { testo: "Ci penso.", fai: [{ dice: "Ci pensi stanotte: domattina l'aspetto.", chi: IRIDE }] }] },
+];
+const PROLOGO_FURTO: Evento = [
+  { buio: "Quella notte…" },
+  { dice: "Gli uomini del Pressappoco rubano il Campionario Madre." },
+  { dice: "Nella fuga si apre, e i Diottri scappano nel borgo." },
+];
+const PROLOGO_MATTINO: Evento = [
+  { buio: "Il mattino dopo." },
+  { dice: "Il Campionario è vuoto! E senza campioni gli strumenti si starano.", chi: IRIDE },
+  { dice: "Lo vedi? Il borgo è starato. Ritroviamo i Diottri.", chi: IRIDE },
+  { dice: "Due regole: la gradazione si misura, o si legge sulla ricetta.", chi: IRIDE },
+  { dice: "Con un allarme, niente misure: prima il medico.", chi: IRIDE },
+  { dice: "Marco, al binario, non legge il tabellone. Vai da lui!", chi: IRIDE },
+];
+
 /* ---------- la bottega di Iride, dentro ---------- */
 
 const BOTTEGA: MappaDef = {
@@ -247,7 +274,7 @@ const BOTTEGA: MappaDef = {
       id: "iride", figura: "iride", x: 5, y: 2, dir: "giu",
       parla: [
         { se: { nonFatti: ["c1"] }, fai: [{ dice: "Marco, al binario, non legge il tabellone. Vai da lui!", chi: IRIDE }] },
-        { se: { nonFatti: ["r1"] }, fai: [{ dice: "Un luccichio all'edicola? Tocca, prova col banco, poi Riconosci.", chi: IRIDE }] },
+        { se: { nonFatti: ["r1"] }, fai: [{ dice: "All'edicola luccica: tocca, prova col banco, poi Riconosci.", chi: IRIDE }] },
         { se: { nonFatti: ["c2"] }, fai: [{ dice: "In piazza c'è Giulia: si stanca gli occhi.", chi: IRIDE }] },
         { se: { nonFatti: ["r2"] }, fai: [{ dice: "Stasera, nel vicolo dei lampioni, cerca il verde.", chi: IRIDE }] },
         { se: { nonFatti: ["c3"] }, fai: [{ dice: "Davide è al parcheggio, in fondo al vicolo.", chi: IRIDE }] },
@@ -269,10 +296,10 @@ const BOTTEGA: MappaDef = {
           {
             se: { fatti: ["c5"] },
             allora: [
-              { dice: "Con un allarme, prima il medico. Brav{o}.", chi: IRIDE },
+              { dice: "Con un allarme, niente misure: prima il medico.", chi: IRIDE },
               { dice: "Il borgo è tarato: ecco l'attestato di Borgo Diottria!", chi: IRIDE },
               { segna: "attestato" },
-              { fine: "Fine del primo mondo. Nella Valle delle Montature il Pressappoco ha aperto un banco…" },
+              { fine: "Nella Valle delle Montature il Pressappoco ha aperto un banco…" },
             ],
           },
         ],
@@ -284,31 +311,11 @@ const BOTTEGA: MappaDef = {
     { id: "cassetta", tipo: "oggetto", x: 8, y: 3, solido: false, tocca: [{ fai: [{ dice: "La cassetta di prova: tutte le forze, a quarti di diottria." }] }] },
     { id: "specchio", tipo: "oggetto", x: 6, y: 1, solido: false, tocca: [{ fai: [{ dice: "Ti guardi allo specchio. Gli occhiali ti stanno bene." }] }] },
   ],
+  // il prologo in tre pezzi: chi chiude il gioco a metà, rientrando riprende da dove era rimasto
   entrando: [
-    {
-      se: { nonSegni: ["misurato"] },
-      fai: [
-        { dice: "Buongiorno! Da lontano sfocato, e da vicino bene?", chi: IRIDE },
-        { scelta: "Rispondi", voci: [{ testo: "Sì, è così.", fai: [] }, { testo: "Come lo sa?", fai: [{ dice: "Strizza gli occhi verso la strada.", chi: IRIDE }] }] },
-        { dice: "La gradazione non si indovina: si misura.", chi: IRIDE },
-        { segna: "misurato" },
-        { dice: "Con −1,25 la strada è nitida, e l'occhio riposa." },
-        { dice: "Ecco Conca, la lente col meno: è la tua. E Bruno, le lenti da sole.", chi: IRIDE },
-        { dice: "Coi clienti ci sai fare, ti ho visto. Vuoi imparare il mestiere?", chi: IRIDE },
-        { scelta: "Rispondi", voci: [{ testo: "Sì!", fai: [] }, { testo: "Ci penso.", fai: [{ dice: "Ci pensi stanotte. Domattina ti aspetto.", chi: IRIDE }] }] },
-        { buio: "Quella notte…" },
-        { dice: "Gli uomini del Pressappoco rubano il Campionario Madre." },
-        { dice: "Nella fuga si apre, e i Diottri scappano nel borgo." },
-        { segna: "furto" },
-        { buio: "Il mattino dopo." },
-        { dice: "Il Campionario è vuoto! E senza campioni gli strumenti si starano.", chi: IRIDE },
-        { dice: "Lo vedi? Fuori tutto è sfocato. Ritroviamo i Diottri.", chi: IRIDE },
-        { dice: "Due regole: la gradazione si misura, o si legge sulla ricetta.", chi: IRIDE },
-        { dice: "Con un allarme, niente misure: prima il medico.", chi: IRIDE },
-        { dice: "Marco, al binario, non legge il tabellone. Vai da lui!", chi: IRIDE },
-        { segna: "prologo" },
-      ],
-    },
+    { se: { nonSegni: ["misurato"] }, fai: [...PROLOGO_MISURA, { segna: "misurato" }, ...PROLOGO_LENTI, ...PROLOGO_FURTO, { segna: "furto" }, ...PROLOGO_MATTINO, { segna: "prologo" }] },
+    { se: { nonSegni: ["furto"] }, fai: [...PROLOGO_LENTI, ...PROLOGO_FURTO, { segna: "furto" }, ...PROLOGO_MATTINO, { segna: "prologo" }] },
+    { se: { nonSegni: ["prologo"] }, fai: [...PROLOGO_MATTINO, { segna: "prologo" }] },
   ],
 };
 

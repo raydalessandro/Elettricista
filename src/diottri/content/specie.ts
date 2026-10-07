@@ -47,7 +47,7 @@ export const SPECIE: Record<SpecieId, Specie> = {
     id: "bruno", nome: "Bruno", famiglia: "sole",
     uso: "Lente da sole: la categoria dice quanto scurisce.",
     forma: "Colore pieno, più scuro a ogni categoria.",
-    limite: "La categoria 4 non va mai alla guida.",
+    limite: "La 4 è da ghiacciaio, e non va mai alla guida.",
     prove: "Il fotometro dice quanta luce passa.",
     lessico: [["categoria", "quanto è scura, da 0 a 4"]],
   },
@@ -56,7 +56,7 @@ export const SPECIE: Record<SpecieId, Specie> = {
     uso: "Montatura in acetato: colorata, si regola a caldo.",
     forma: "Lastra lucida, spesso avana o colorata.",
     limite: "Lasciata al sole in auto, si può deformare.",
-    prove: "Sull'asta spesso c'è il materiale: «Acetate», «Titanium» o «Ti».",
+    prove: "Sull'asta spesso c'è scritto il materiale: «Acetate».",
     lessico: [["acetato", "per il cliente, «di plastica»"], ["52□18 140", "calibro, ponte, asta"]],
   },
 };

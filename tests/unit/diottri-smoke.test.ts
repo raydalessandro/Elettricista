@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-/* Diottri, un giro completo nell'interfaccia: i dieci passi in fila, da bravi, poi si chiude e si riapre.
-   La storia deve salvarsi e continuare (diottri.v1), senza toccare i progressi dei corsi. */
+/* Diottri, un giro completo nell'interfaccia dal percorso (il menu del mondo → «Il percorso»): i dieci passi in fila,
+   da bravi, poi si chiude e si riapre. La storia deve salvarsi e continuare (diottri.v1), senza toccare i corsi.
+   Il gioco nel mondo, camminando, sta in diottri-mondo-ui.test.ts. */
 import { beforeAll, describe, expect, it } from "vitest";
 import { ORDINE, vassoioPrima } from "../../src/diottri/content";
 import { grandezzaGiusta } from "../../src/diottri/core/riconosci";
@@ -109,6 +110,8 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
   it("si comincia scegliendo chi sei, e la Maestra dà il benvenuto", () => {
     expect(text()).toContain("Chi sei?");
     tap("[data-act=chi][data-arg=donna]");
+    expect(F.S.screen).toBe("mondo"); // si comincia nel borgo
+    act("percorso");
     expect(text()).toContain("Benvenuta in bottega");
     expect(text()).toContain("Con un allarme, niente misure: prima il medico.");
     tap("[data-act=ok]"); // «Cominciamo» apre il primo caso
@@ -158,7 +161,8 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
 
   it("chiudi e riapri: la storia è salvata e continua", async () => {
     await mount();
-    expect(F.S.screen).toBe("home");
+    expect(F.S.screen).toBe("mondo");
+    act("percorso");
     expect(text()).toContain("Fatto tutto!");
     expect(app().querySelectorAll(".passo.chiuso").length).toBe(0);
     expect(F.prog.chi).toBe("donna");
@@ -203,6 +207,7 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
     localStorage.removeItem("diottri.v1");
     await mount();
     tap("[data-act=chi][data-arg=uomo]");
+    act("percorso");
     tap("[data-act=apri][data-arg=c1]");
     act("prova");
     act("sposta", "0.25");
@@ -213,6 +218,7 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
   it("un riconoscimento sbagliato tre volte: la risposta si vede, poi scappa", async () => {
     localStorage.setItem("diottri.v1", JSON.stringify({ v: 1, chi: "uomo", benvenuto: true, fatti: { c1: { stelle: { occhio: true, spiegazione: true, soluzione: true } } }, vassoio: ["conca", "bruno"], proveViste: [], registro: {} }));
     await mount();
+    act("percorso");
     tap("[data-act=apri][data-arg=r1]");
     tap("[data-act=provaRic][data-arg=neutralizza]");
     expect(text()).toContain("col meno va con, col più contro"); // la prima volta la Maestra spiega la prova
