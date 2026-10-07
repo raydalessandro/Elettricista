@@ -24,6 +24,10 @@ const tap = (sel: string) => {
   el.click();
 };
 
+/** Come chi ha già fatto il prologo nel borgo: il percorso si apre. */
+const dopoIlPrologo = () => { for (const x of ["inizio", "misurato", "furto", "prologo"]) if (!F.prog.mondo.segni.includes(x)) F.prog.mondo.segni.push(x); };
+const MONDO_FATTO = { mappa: "borgo", x: 14, y: 10, dir: "giu", segni: ["inizio", "misurato", "furto", "prologo"] };
+
 function mount() {
   document.body.innerHTML = '<div id="app" class="dio"></div><div id="toast" hidden></div>';
   window.scrollTo = (() => {}) as typeof window.scrollTo;
@@ -107,20 +111,22 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
     await mount();
   });
 
-  it("si comincia scegliendo chi sei, e la Maestra dà il benvenuto", () => {
+  it("si comincia scegliendo chi sei; il percorso si apre dopo il prologo", () => {
     expect(text()).toContain("Chi sei?");
     tap("[data-act=chi][data-arg=donna]");
     expect(F.S.screen).toBe("mondo"); // si comincia nel borgo
     act("percorso");
-    expect(text()).toContain("Benvenuta in bottega");
-    expect(text()).toContain("Con un allarme, niente misure: prima il medico.");
-    tap("[data-act=ok]"); // «Cominciamo» apre il primo caso
-    expect(F.S.screen).toBe("caso");
-    expect(F.S.id).toBe("c1");
-    act("home");
-    expect(text()).not.toContain("Benvenuta in bottega");
+    expect(text()).toContain("Il percorso si apre dopo la prima visita nella bottega di Iride.");
+    expect(app().querySelector("[data-act=apri]")).toBeNull();
+    tap("[data-act=mondo]");
+    dopoIlPrologo();
+    act("percorso");
     // solo il primo passo è aperto
     expect(app().querySelectorAll(".passo:not(.chiuso)").length).toBe(1);
+    tap("[data-act=apri][data-arg=c1]");
+    expect(F.S.screen).toBe("caso");
+    act("home");
+    expect(F.S.screen).toBe("home");
   });
 
   it("il primo caso ha i consigli della Maestra, passo per passo", () => {
@@ -203,10 +209,26 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
     expect(Object.values(prog.fatti.c1.stelle).filter(Boolean).length).toBe(3);
   });
 
+  it("un caso finito si salva già sulla schermata del risultato", async () => {
+    localStorage.setItem("diottri.v1", JSON.stringify({ v: 1, chi: "uomo", fatti: {}, vassoio: ["conca", "bruno"], proveViste: [], registro: {}, mondo: MONDO_FATTO }));
+    await mount();
+    act("percorso");
+    tap("[data-act=apri][data-arg=c1]");
+    giocaCaso("c1");
+    expect(text()).toContain("Ci vedo!");
+    // chi chiude qui, senza toccare il bottone, ha il caso salvato
+    const prog = JSON.parse(localStorage.getItem("diottri.v1")!);
+    expect(Object.values(prog.fatti.c1.stelle).filter(Boolean).length).toBe(3);
+    expect(prog.registro.c1.volte).toBe(1);
+    tap("[data-act=fineCaso]");
+    expect(JSON.parse(localStorage.getItem("diottri.v1")!).registro.c1.volte).toBe(1); // non si conta due volte
+  });
+
   it("la prova lenti avvisa quando serve un Diottro che non hai", async () => {
     localStorage.removeItem("diottri.v1");
     await mount();
     tap("[data-act=chi][data-arg=uomo]");
+    dopoIlPrologo();
     act("percorso");
     tap("[data-act=apri][data-arg=c1]");
     act("prova");
@@ -216,7 +238,7 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
   });
 
   it("un riconoscimento sbagliato tre volte: la risposta si vede, poi scappa", async () => {
-    localStorage.setItem("diottri.v1", JSON.stringify({ v: 1, chi: "uomo", benvenuto: true, fatti: { c1: { stelle: { occhio: true, spiegazione: true, soluzione: true } } }, vassoio: ["conca", "bruno"], proveViste: [], registro: {} }));
+    localStorage.setItem("diottri.v1", JSON.stringify({ v: 1, chi: "uomo", benvenuto: true, fatti: { c1: { stelle: { occhio: true, spiegazione: true, soluzione: true } } }, vassoio: ["conca", "bruno"], proveViste: [], registro: {}, mondo: MONDO_FATTO }));
     await mount();
     act("percorso");
     tap("[data-act=apri][data-arg=r1]");
@@ -233,6 +255,21 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
     expect(text()).toContain("Scappato!");
     expect(text()).toContain("La risposta: Lente col più");
     tap("[data-act=fineRic]");
-    expect(JSON.parse(localStorage.getItem("diottri.v1")!).fatti.r1).toBeUndefined();
+    const prog = JSON.parse(localStorage.getItem("diottri.v1")!);
+    expect(prog.fatti.r1).toBeUndefined();
+    expect(prog.aiutati).toContain("r1"); // vista la risposta, «Occhio esperto» non vale più
+  });
+
+  it("dopo la risposta vista, «Occhio esperto» non si prende copiando", () => {
+    tap("[data-act=apri][data-arg=r1]");
+    const def = F.RIC.r1, st = F.S.ric;
+    tap("[data-act=provaRic][data-arg=neutralizza]");
+    act("sheet", "riconosci");
+    act("sceltaId", def.specie);
+    act("sceltaG", grandezzaGiusta(def, st)!);
+    act("riconosci");
+    expect(st.fine).toBe("preso");
+    expect(text()).not.toContain("Occhio esperto");
+    expect(JSON.parse(localStorage.getItem("diottri.v1")!).fatti.r1).toEqual({ preso: true, esperto: false });
   });
 });

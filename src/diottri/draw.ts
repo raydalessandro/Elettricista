@@ -254,11 +254,13 @@ export function astaSVG(testo: string): string {
 }
 
 /** Quanto lavora l'occhio, senza e con la lente: due barre. */
-export function lavoraSVG(senza: number, con: number): string {
+export function lavoraSVG(senza: number, con: number, dove = ""): string {
+  const a = dove ? `, ${dove}` : "";
+  const titolo = dove ? `<text x="188" y="15" text-anchor="end" style="font:600 10px var(--f-body);fill:${INK}">${dove}</text>` : "";
   const bar = (y: number, v: number, label: string) =>
     `<text x="12" y="${y - 6}" style="font:600 11px var(--f-body);fill:${INK}">${label}</text><rect x="12" y="${y}" width="176" height="14" rx="4" fill="#d8cfb5"/><rect x="12" y="${y}" width="${f1(176 * Math.min(1, v))}" height="14" rx="4" fill="${v > 0.5 ? "#b5473a" : v > 0.13 ? "#d9a441" : "#3f8a4f"}"/>`;
-  return `<svg class="prova-svg" viewBox="0 0 200 120" role="img" aria-label="Quanto lavora l'occhio, senza e con la lente">` +
-    `<rect width="200" height="120" rx="8" fill="#f3ecd6"/>` + bar(36, senza, `Senza lente: lavora ${Math.round(senza * 100)}%`) + bar(86, con, `Con la lente: lavora ${Math.round(con * 100)}%`) + `</svg>`;
+  return `<svg class="prova-svg" viewBox="0 0 200 120" role="img" aria-label="Quanto lavora l'occhio${a}, senza e con la lente">` +
+    `<rect width="200" height="120" rx="8" fill="#f3ecd6"/>` + titolo + bar(36, senza, `Senza lente: lavora ${Math.round(senza * 100)}%`) + bar(86, con, `Con la lente: lavora ${Math.round(con * 100)}%`) + `</svg>`;
 }
 
 /** Una goccia d'acqua sulla lente. */

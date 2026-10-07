@@ -115,12 +115,18 @@ export function utilita(def: RiconoscimentoDef, st: RicState, prova: ProvaId): U
 
 function diffida(st: RicState, d: number) {
   st.diffidenza += d;
-  if (!st.soluzioneMostrata) st.diffidenza = Math.min(5, st.diffidenza);
+  if (!st.soluzioneMostrata && st.diffidenza > 5) {
+    // prima della risposta non scappa: resta sul punto di farlo, e lo si dice una volta
+    st.diffidenza = 5;
+    if (!st.log.some(m => m.t === SUL_PUNTO)) say(st, "iride", SUL_PUNTO);
+  }
   if (st.diffidenza >= 6) {
     st.fine = "scappato";
     say(st, "gioco", "Si spaventa e scappa. Lo ritrovi dopo.");
   }
 }
+
+const SUL_PUNTO = "È sul punto di scappare: niente più prove a caso.";
 
 /** Fa una prova. */
 export function prova(def: RiconoscimentoDef, st: RicState, p: ProvaId): Risultato | null {

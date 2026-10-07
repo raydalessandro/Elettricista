@@ -3,7 +3,8 @@
    lontano e ti indica dove luccica il prossimo Diottro. Le mappe sono griglie di lettere; sopra, gli oggetti,
    i personaggi e le cose da toccare. Ogni testo sta in un riquadro: tre righe da 24 caratteri.
    «{o}» diventa «o» o «a» secondo chi gioca. */
-import type { Battuta, Condizione, Contesto, Evento, MappaDef, StatoMondo } from "../mondo/tipi";
+import { vale } from "../mondo/motore";
+import type { Battuta, Comando, Condizione, Contesto, Evento, MappaDef, StatoMondo } from "../mondo/tipi";
 
 const IRIDE = "Maestra Iride";
 
@@ -55,46 +56,139 @@ const LEGENDA_FUORI: MappaDef["legenda"] = {
   "|": { tile: "recinto", solido: true },
 };
 
-/** Il cliente: prima il suo problema e il caso, dopo il grazie, quello che legge lontano, e la prova da rifare. */
-function cliente(id: string, se: Condizione | undefined, prima: string, dopo: Evento, grazie: string): Battuta[] {
-  const [nome, testo] = prima.split(": ");
-  const [, grazieTesto] = grazie.split(": ");
+/** Un cliente del borgo. Prima: il suo problema e il caso. Subito dopo: ci vede, e indica dove luccica il prossimo
+    Diottro. Le volte dopo: il grazie, di nuovo l'indicazione finché serve, e la prova da rifare (se si vuole). */
+interface Cliente {
+  id: string;
+  nome: string;
+  problema: string;
+  ciVedo: string;
+  /** il prossimo passo: detto subito dopo il caso, e ripetuto dopo se non è ancora fatto */
+  indica: { passo: string; subito: string; poi: string };
+  /** quello che succede dopo l'indicazione (la sera, la mattina) */
+  poi?: Evento;
+  grazie: string;
+}
+
+function cliente(c: Cliente): Battuta[] {
   return [
     {
-      se: { nonFatti: [id] },
+      se: { nonFatti: [c.id] },
       fai: [
-        { dice: testo, chi: nome },
+        { dice: c.problema, chi: c.nome },
         {
           scelta: "Andiamo in bottega?",
           voci: [
-            { testo: "Sì, andiamo!", fai: [{ caso: id }, { se: { fatti: [id] }, allora: dopo, altrimenti: [{ dice: "Riproviamo quando vuoi: non ho fretta.", chi: nome }] }] },
-            { testo: "Dopo.", fai: [] },
+            {
+              testo: "Sì, andiamo!",
+              fai: [
+                { caso: c.id },
+                {
+                  se: { fatti: [c.id] },
+                  allora: [{ dice: c.ciVedo, chi: c.nome }, { se: { nonFatti: [c.indica.passo] }, allora: [{ dice: c.indica.subito, chi: c.nome }] }, ...(c.poi ?? [])],
+                  altrimenti: [{ dice: "Riproviamo quando vuoi: non ho fretta.", chi: c.nome }],
+                },
+              ],
+            },
+            { testo: "Dopo.", fai: [], annulla: true },
           ],
         },
       ],
     },
     {
       fai: [
-        { dice: grazieTesto, chi: nome },
-        { scelta: "Rifacciamo la prova?", voci: [{ testo: "Sì, rifacciamola.", fai: [{ caso: id }] }, { testo: "No, grazie.", fai: [] }] },
+        { dice: c.grazie, chi: c.nome },
+        { se: { nonFatti: [c.indica.passo] }, allora: [{ dice: c.indica.poi, chi: c.nome }] },
+        { scelta: "Rifacciamo la prova?", voci: [{ testo: "Sì, rifacciamola.", fai: [{ caso: c.id }] }, { testo: "No, grazie.", fai: [], annulla: true }], predefinita: 1 },
       ],
     },
-  ].map(b => ({ ...b, se: { ...(se ?? {}), ...(b.se ?? {}) } }));
+  ];
 }
 
-/** Un luccichio: il riconoscimento, poi una riga se è tornato nel vassoio. */
-function luccichio(id: string, x: number, y: number, se: Condizione, preso: string): MappaDef["cose"][number] {
+/** Un luccichio: il riconoscimento; preso, cosa torna a funzionare e dove andare. */
+function luccichio(id: string, x: number, y: number, se: Condizione, preso: string[]): MappaDef["cose"][number] {
   return {
     id: `luccichio-${id}`, tipo: "luccichio", x, y,
     se: { ...se, nonFatti: [...(se.nonFatti ?? []), id] },
     tocca: [{
       fai: [
         { ric: id },
-        { se: { fatti: [id] }, allora: [{ dice: preso }], altrimenti: [{ dice: "È scappato, ma non lontano: riprova quando vuoi." }] },
+        { se: { fatti: [id] }, allora: preso.map(t => ({ dice: t })), altrimenti: [{ dice: "È scappato, ma non lontano: riprova quando vuoi." }] },
       ],
     }],
   };
 }
+
+/** La prima battuta che vale, scritta come un comando: per dire il consiglio giusto dentro un evento. */
+function primaCheVale(bs: Battuta[]): Evento {
+  const [b, ...resto] = bs;
+  if (!b) return [];
+  if (!b.se) return b.fai;
+  return [{ se: b.se, allora: b.fai, altrimenti: primaCheVale(resto) } as Comando];
+}
+
+/* ---------- il finale: dopo Luisa, o dovunque si torni con il caso 5 fatto ---------- */
+
+const FINALE: Evento = [
+  { dice: "Con Luisa hai fatto bene: con un allarme, prima il medico.", chi: IRIDE },
+  { dice: "Il borgo è tarato: ecco l'attestato di Borgo Diottria!", chi: IRIDE },
+  { segna: "attestato" },
+  { fine: "Sai misurare, scegliere le lenti e riconoscere un allarme.", titolo: "Attestato di Borgo Diottria", sotto: "Nella Valle delle Montature il Pressappoco ha aperto un banco…" },
+];
+
+/* ---------- i consigli di Iride: il prossimo passo, sempre ---------- */
+
+const CONSIGLI: Battuta[] = [
+  { se: { segni: ["misurato"], nonSegni: ["furto"] }, fai: [{ dice: "Esca a guardare la strada: adesso la vede bene!", chi: IRIDE }] },
+  { se: { nonFatti: ["c1"] }, fai: [{ dice: "Marco, al binario, non legge il tabellone. Vai da lui!", chi: IRIDE }] },
+  { se: { nonFatti: ["r1"] }, fai: [{ dice: "All'edicola luccica: tocca, prova col banco, poi Riconosci.", chi: IRIDE }] },
+  { se: { nonFatti: ["c2"] }, fai: [{ dice: "In piazza c'è Giulia: si stanca gli occhi.", chi: IRIDE }] },
+  { se: { nonFatti: ["r2"] }, fai: [{ dice: "Stasera, nel vicolo dei lampioni, cerca il verde.", chi: IRIDE }] },
+  { se: { nonFatti: ["r5"] }, fai: [{ dice: "Alla nostra vetrina, fuori, c'è un luccichio!", chi: IRIDE }] },
+  { se: { nonFatti: ["c3"] }, fai: [{ dice: "Davide è al parcheggio, in fondo al vicolo.", chi: IRIDE }] },
+  { se: { nonFatti: ["r3"] }, fai: [{ dice: "Al lago brilla qualcosa: guarda sulla sabbia.", chi: IRIDE }] },
+  { se: { nonFatti: ["c4"] }, fai: [{ dice: "Paolo pesca in fondo al pontile.", chi: IRIDE }] },
+  { se: { nonFatti: ["r4"] }, fai: [{ dice: "Davanti alla merceria, sotto l'insegna a righe!", chi: IRIDE }] },
+  { se: { nonFatti: ["c5"] }, fai: [{ dice: "C'è una cliente al banco: ascoltala bene.", chi: IRIDE }] },
+  { se: { nonSegni: ["attestato"] }, fai: FINALE },
+  { fai: [{ dice: "Il borgo è tarato! Torna quando vuoi: i clienti ripassano.", chi: IRIDE }] },
+];
+
+/* ---------- il prologo: la misura, la strada nitida, il furto, il mattino ---------- */
+
+const PROLOGO_MISURA: Evento = [
+  { dice: "Buongiorno! Da lontano sfocato, e da vicino bene?", chi: IRIDE },
+  { scelta: "Rispondi", voci: [{ testo: "Sì, è così.", fai: [] }, { testo: "Come lo sa?", fai: [{ dice: "Strizzi gli occhi verso la strada.", chi: IRIDE }] }] },
+  { dice: "Niente dolore, né lampi? La gradazione non si indovina: si misura.", chi: IRIDE },
+];
+const PROLOGO_LENTI: Evento = [
+  { dice: "Con −1,25 la strada è nitida, e l'occhio riposa." },
+  { dice: "Ecco Conca, la lente col meno: è la sua. E Bruno, le lenti da sole.", chi: IRIDE },
+  { dice: "Coi clienti ci sa fare, si vede. Vuole imparare il mestiere?", chi: IRIDE },
+  { scelta: "Rispondi", voci: [{ testo: "Sì!", fai: [] }, { testo: "Ci penso.", fai: [{ dice: "Ci pensi stanotte: domattina l'aspetto.", chi: IRIDE }] }] },
+  { dice: "Esca a guardare la strada: adesso la vede bene!", chi: IRIDE },
+];
+const PROLOGO_NOTTE: Evento = [
+  { dice: "Che nitido! Adesso si legge anche l'insegna." },
+  { buio: "Quella notte…" },
+  { dice: "Gli uomini del Pressappoco rubano il Campionario Madre." },
+  { dice: "Nella fuga si apre, e i Diottri scappano nel borgo." },
+  { segna: "furto" },
+  { buio: "Il mattino dopo." },
+  { dice: "Strano: anche con gli occhiali il borgo è sfocato. Corri da Iride!" },
+];
+const PROLOGO_MATTINO: Evento = [
+  { dice: "Eccoti! Diamoci del tu: da oggi lavori con me.", chi: IRIDE },
+  { dice: "Il Campionario è vuoto! E senza campioni gli strumenti si starano.", chi: IRIDE },
+  { dice: "Lo vedi? Il borgo è starato. Ritroviamo i Diottri.", chi: IRIDE },
+  { dice: "Due regole: la gradazione si misura, o si legge sulla ricetta.", chi: IRIDE },
+  { dice: "Con un allarme, niente misure: prima il medico.", chi: IRIDE },
+  { dice: "Allarme è dolore, lampi, o la vista che cala d'un tratto.", chi: IRIDE },
+  { segna: "prologo" },
+  ...primaCheVale(CONSIGLI.slice(1)),
+];
+
+/* ---------- il borgo, fuori ---------- */
 
 const BORGO: MappaDef = {
   id: "borgo",
@@ -102,6 +196,7 @@ const BORGO: MappaDef = {
   fuori: true,
   righe: BORGO_RIGHE,
   legenda: LEGENDA_FUORI,
+  ancora: [14, 24],
   timbri: [
     { ogg: "casa_rossa", x: 1, y: 5 },
     { ogg: "bottega", x: 6, y: 5 },
@@ -110,7 +205,13 @@ const BORGO: MappaDef = {
     { ogg: "merceria", x: 1, y: 11 },
     { ogg: "fontana", x: 15, y: 7 },
     { ogg: "panchina", x: 16, y: 11 },
-    { ogg: "tabellone", x: 8, y: 2 },
+    {
+      ogg: "tabellone", x: 8, y: 2,
+      tocca: [
+        { se: { fatti: ["c1"] }, fai: [{ dice: "Treno per Bergamo, binario 4. Marco ora lo legge." }] },
+        { fai: [{ dice: "Il tabellone delle partenze. Marco non riesce a leggerlo." }] },
+      ],
+    },
     { ogg: "pensilina", x: 2, y: 2 },
     { ogg: "pensilina", x: 19, y: 2 },
     { ogg: "lampione", x: 11, y: 11 },
@@ -139,48 +240,48 @@ const BORGO: MappaDef = {
     {
       id: "marco", figura: "marco", x: 10, y: 3, dir: "sinistra", siGira: true,
       se: { segni: ["prologo"] },
-      parla: cliente("c1", undefined,
-        "Marco: Al binario non leggo più il tabellone!",
-        [
-          { dice: "Ci vedo! Il treno per Bergamo è al binario 4.", chi: "Marco" },
-          { dice: "E guarda: sull'edicola, in piazza, luccica qualcosa!", chi: "Marco" },
-        ],
-        "Marco: Leggo tutto il tabellone, anche l'ultima riga!"),
+      parla: cliente({
+        id: "c1", nome: "Marco",
+        problema: "Al binario non leggo più il tabellone!",
+        ciVedo: "Ci vedo! Il treno per Bergamo è al binario 4.",
+        indica: { passo: "r1", subito: "E guarda: sull'edicola, in piazza, luccica qualcosa!", poi: "Sull'edicola, in piazza, luccica qualcosa!" },
+        grazie: "Leggo tutto il tabellone, anche l'ultima riga!",
+      }),
     },
     {
       id: "giulia", figura: "giulia", x: 18, y: 11, dir: "sinistra", siGira: true,
       se: { fatti: ["r1"] },
-      parla: cliente("c2", undefined,
-        "Giulia: Ci vedo benissimo, ma la sera ho gli occhi stanchi.",
-        [
-          { dice: "Che differenza! Da vicino è tutto più comodo.", chi: "Giulia" },
-          { dice: "Stasera, nel vicolo dei lampioni, ho visto un luccichio verde.", chi: "Giulia" },
-          { buio: "Si fa sera." },
-        ],
-        "Giulia: Al computer adesso sto più comoda."),
+      parla: cliente({
+        id: "c2", nome: "Giulia",
+        problema: "Ci vedo benissimo, ma la sera ho gli occhi stanchi.",
+        ciVedo: "Che differenza! Da vicino è tutto più comodo.",
+        indica: { passo: "r2", subito: "Stasera, nel vicolo dei lampioni, ho visto un luccichio verde.", poi: "Nel vicolo dei lampioni ho visto un luccichio verde." },
+        poi: [{ buio: "Si fa sera." }],
+        grazie: "Al computer adesso sto più comoda.",
+      }),
     },
     {
       id: "davide", figura: "davide", x: 4, y: 23, dir: "sinistra", siGira: true,
-      se: { fatti: ["r2"] },
-      parla: cliente("c3", undefined,
-        "Davide: I miei occhiali sono fondi di bottiglia!",
-        [
-          { dice: "Sottili! E molti meno riflessi.", chi: "Davide" },
-          { dice: "Domattina passo dal lago: sulla sabbia brilla qualcosa.", chi: "Davide" },
-          { buio: "È mattina." },
-        ],
-        "Davide: Stasera guido tranquillo."),
+      se: { fatti: ["r5"] },
+      parla: cliente({
+        id: "c3", nome: "Davide",
+        problema: "I miei occhiali sono fondi di bottiglia!",
+        ciVedo: "Sottili! E molti meno riflessi.",
+        indica: { passo: "r3", subito: "Domattina passo dal lago: sulla sabbia brilla qualcosa.", poi: "Al lago, sulla sabbia, brilla qualcosa." },
+        poi: [{ buio: "È mattina." }],
+        grazie: "Stasera guido tranquillo.",
+      }),
     },
     {
       id: "paolo", figura: "paolo", x: 22, y: 24, dir: "giu", siGira: true,
       se: { fatti: ["r3"] },
-      parla: cliente("c4", undefined,
-        "Paolo: Vorrei occhiali da sole da vista, per pescare a mezzogiorno.",
-        [
-          { dice: "Vedo il galleggiante! E l'acqua non acceca più.", chi: "Paolo" },
-          { dice: "Laggiù, sotto l'insegna a righe della merceria, luccica qualcosa.", chi: "Paolo" },
-        ],
-        "Paolo: Abbocca! Grazie ancora."),
+      parla: cliente({
+        id: "c4", nome: "Paolo",
+        problema: "Vorrei occhiali da sole da vista, per pescare a mezzogiorno.",
+        ciVedo: "Vedo il galleggiante! E l'acqua non acceca più.",
+        indica: { passo: "r4", subito: "Laggiù, sotto l'insegna a righe della merceria, luccica qualcosa.", poi: "Sotto l'insegna a righe della merceria luccica qualcosa." },
+        grazie: "Abbocca! Grazie ancora.",
+      }),
     },
     {
       id: "passante", figura: "passante", x: 13, y: 9, dir: "giu", siGira: true,
@@ -192,49 +293,26 @@ const BORGO: MappaDef = {
     },
   ],
   cose: [
-    luccichio("r1", 22, 7, { fatti: ["c1"] }, "Bombo torna nel vassoio. Il borgo si vede un po' meglio."),
-    luccichio("r2", 6, 18, { fatti: ["c2"] }, "Verdino torna nel vassoio. Il borgo si vede meglio."),
-    luccichio("r3", 26, 19, { fatti: ["c3"] }, "Polare torna nel vassoio. Il borgo si vede meglio."),
-    luccichio("r4", 3, 14, { fatti: ["c4"] }, "Rullo torna nel vassoio. Manca poco!"),
-    luccichio("r5", 10, 9, { fatti: ["r4"] }, "Cello torna nel vassoio. Il borgo è quasi nitido."),
+    luccichio("r1", 22, 7, { fatti: ["c1"] }, ["Bombo è tornato: la cassetta di prova ha di nuovo i più.", "Il borgo si vede meglio. In piazza, Giulia ha gli occhi stanchi."]),
+    luccichio("r2", 6, 18, { fatti: ["c2"] }, ["Verdino è tornato: adesso si può fare l'antiriflesso.", "Il borgo si vede meglio. Alla vetrina di Iride luccica qualcosa."]),
+    luccichio("r5", 10, 9, { fatti: ["r2"] }, ["Cello è tornato: sull'asta si leggono calibro e ponte.", "Il borgo si vede meglio. Davide è al parcheggio, in fondo al vicolo."]),
+    luccichio("r3", 26, 19, { fatti: ["c3"] }, ["Polare è tornato: adesso si possono fare le polarizzate.", "Manca un Diottro solo. Paolo pesca in fondo al pontile."]),
+    luccichio("r4", 3, 14, { fatti: ["c4"] }, ["Rullo è tornato: il cilindro, per l'astigmatismo.", "Il borgo è di nuovo nitido! In bottega ti aspetta una cliente."]),
     { id: "cartello-bottega", tipo: "cartello", x: 11, y: 8, solido: true, tocca: [{ fai: [{ dice: "Ottica Iride. Qui la vista si misura." }] }] },
-    { id: "cartello-sud", tipo: "cartello", x: 16, y: 23, solido: true, tocca: [{ fai: [{ dice: "Su: la piazza e la stazione." }] }] },
+    { id: "cartello-sud", tipo: "cartello", x: 16, y: 23, solido: true, tocca: [{ fai: [{ dice: "Su: la piazza, l'ottica e la stazione." }] }] },
     { id: "cartello-lago", tipo: "cartello", x: 20, y: 14, solido: true, tocca: [{ fai: [{ dice: "Giù: il lago. Vietato tuffarsi dal pontile." }] }] },
     { id: "cartello-vicolo", tipo: "cartello", x: 8, y: 14, solido: true, tocca: [{ fai: [{ dice: "Vicolo dei lampioni. Parcheggio in fondo." }] }] },
   ],
   entrando: [
     { se: { nonSegni: ["inizio"] }, fai: [{ dice: "Da vicino ci vedi bene. Ma in fondo alla strada, l'insegna è una macchia." }, { segna: "inizio" }] },
+    // uscito dalla bottega con gli occhiali nuovi: la strada nitida, poi la notte del furto
+    { se: { segni: ["misurato"], nonSegni: ["furto"] }, fai: PROLOGO_NOTTE },
   ],
 };
 
-/* ---------- il prologo, nella bottega ---------- */
-
-const PROLOGO_MISURA: Evento = [
-  { dice: "Buongiorno! Da lontano sfocato, e da vicino bene?", chi: IRIDE },
-  { scelta: "Rispondi", voci: [{ testo: "Sì, è così.", fai: [] }, { testo: "Come lo sa?", fai: [{ dice: "Strizzi gli occhi verso la strada.", chi: IRIDE }] }] },
-  { dice: "Niente dolore, né lampi? La gradazione non si indovina: si misura.", chi: IRIDE },
-];
-const PROLOGO_LENTI: Evento = [
-  { dice: "Con −1,25 la strada è nitida, e l'occhio riposa." },
-  { dice: "Ecco Conca, la lente col meno: è la sua. E Bruno, le lenti da sole.", chi: IRIDE },
-  { dice: "Coi clienti ci sa fare, si vede. Vuole imparare il mestiere?", chi: IRIDE },
-  { scelta: "Rispondi", voci: [{ testo: "Sì!", fai: [] }, { testo: "Ci penso.", fai: [{ dice: "Ci pensi stanotte: domattina l'aspetto.", chi: IRIDE }] }] },
-];
-const PROLOGO_FURTO: Evento = [
-  { buio: "Quella notte…" },
-  { dice: "Gli uomini del Pressappoco rubano il Campionario Madre." },
-  { dice: "Nella fuga si apre, e i Diottri scappano nel borgo." },
-];
-const PROLOGO_MATTINO: Evento = [
-  { buio: "Il mattino dopo." },
-  { dice: "Il Campionario è vuoto! E senza campioni gli strumenti si starano.", chi: IRIDE },
-  { dice: "Lo vedi? Il borgo è starato. Ritroviamo i Diottri.", chi: IRIDE },
-  { dice: "Due regole: la gradazione si misura, o si legge sulla ricetta.", chi: IRIDE },
-  { dice: "Con un allarme, niente misure: prima il medico.", chi: IRIDE },
-  { dice: "Marco, al binario, non legge il tabellone. Vai da lui!", chi: IRIDE },
-];
-
 /* ---------- la bottega di Iride, dentro ---------- */
+
+const TUTTI_I_DIOTTRI: Condizione = { fatti: ["r1", "r2", "r3", "r4", "r5"] };
 
 const BOTTEGA: MappaDef = {
   id: "bottega",
@@ -258,64 +336,58 @@ const BOTTEGA: MappaDef = {
     T: { tile: "tappeto" },
     z: { tile: "zerbino" },
   },
+  ancora: [4, 7],
   timbri: [
-    { ogg: "scaffale", x: 0, y: 0 },
-    { ogg: "campionario", x: 2, y: 0 },
-    { ogg: "specchio", x: 6, y: 0 },
-    { ogg: "scaffale", x: 8, y: 0 },
+    { ogg: "scaffale", x: 0, y: 0, tocca: [{ fai: [{ dice: "Astucci, panni e spray per pulire le lenti." }] }] },
+    {
+      ogg: "campionario", x: 2, y: 0,
+      tocca: [
+        { se: TUTTI_I_DIOTTRI, fai: [{ dice: "Il Campionario Madre: tutti i Diottri del borgo sono a casa." }] },
+        { se: { segni: ["furto"] }, fai: [{ dice: "Il Campionario Madre: i posti vuoti aspettano i Diottri." }] },
+        { fai: [{ dice: "Il Campionario Madre: i campioni di tutte le lenti." }] },
+      ],
+    },
+    { ogg: "specchio", x: 6, y: 0, tocca: [{ fai: [{ dice: "Ti guardi allo specchio. Gli occhiali ti stanno bene." }] }] },
+    { ogg: "scaffale", x: 8, y: 0, tocca: [{ fai: [{ dice: "Astucci, panni e spray per pulire le lenti." }] }] },
     { ogg: "banco", x: 3, y: 3 },
-    { ogg: "cassetta", x: 8, y: 3 },
-    { ogg: "vetrinetta", x: 0, y: 4 },
+    {
+      ogg: "cassetta", x: 8, y: 3,
+      tocca: [
+        { se: { segni: ["furto"], nonFatti: ["r1"] }, fai: [{ dice: "La cassetta di prova: i più sono scappati con Bombo." }] },
+        { fai: [{ dice: "La cassetta di prova: tutte le forze, a quarti di diottria." }] },
+      ],
+    },
+    {
+      ogg: "vetrinetta", x: 0, y: 4,
+      tocca: [
+        { se: { fatti: ["r5"] }, fai: [{ dice: "Sulle aste: 52□18 140. Calibro, ponte e asta, in millimetri." }] },
+        { fai: [{ dice: "Montature in vetrina. Sulle aste ci sono dei numeri." }] },
+      ],
+    },
     { ogg: "pianta", x: 9, y: 6 },
   ],
   porte: [{ x: 4, y: 8, verso: { mappa: "borgo", x: 8, y: 9, dir: "giu" } }],
   personaggi: [
-    {
-      id: "iride", figura: "iride", x: 5, y: 2, dir: "giu",
-      parla: [
-        { se: { nonFatti: ["c1"] }, fai: [{ dice: "Marco, al binario, non legge il tabellone. Vai da lui!", chi: IRIDE }] },
-        { se: { nonFatti: ["r1"] }, fai: [{ dice: "All'edicola luccica: tocca, prova col banco, poi Riconosci.", chi: IRIDE }] },
-        { se: { nonFatti: ["c2"] }, fai: [{ dice: "In piazza c'è Giulia: si stanca gli occhi.", chi: IRIDE }] },
-        { se: { nonFatti: ["r2"] }, fai: [{ dice: "Stasera, nel vicolo dei lampioni, cerca il verde.", chi: IRIDE }] },
-        { se: { nonFatti: ["c3"] }, fai: [{ dice: "Davide è al parcheggio, in fondo al vicolo.", chi: IRIDE }] },
-        { se: { nonFatti: ["r3"] }, fai: [{ dice: "Al lago brilla qualcosa: guarda sulla sabbia.", chi: IRIDE }] },
-        { se: { nonFatti: ["c4"] }, fai: [{ dice: "Paolo pesca in fondo al pontile.", chi: IRIDE }] },
-        { se: { nonFatti: ["r4"] }, fai: [{ dice: "Davanti alla merceria, sotto l'insegna a righe!", chi: IRIDE }] },
-        { se: { nonFatti: ["r5"] }, fai: [{ dice: "Nella nostra vetrina, fuori, c'è un luccichio!", chi: IRIDE }] },
-        { se: { nonFatti: ["c5"] }, fai: [{ dice: "C'è una cliente al banco: ascoltala bene.", chi: IRIDE }] },
-        { fai: [{ dice: "Il borgo è tarato! Torna quando vuoi: i clienti ripassano.", chi: IRIDE }] },
-      ],
-    },
+    { id: "iride", figura: "iride", x: 5, y: 2, dir: "giu", parla: CONSIGLI },
     {
       id: "luisa", figura: "luisa", x: 4, y: 5, dir: "su", siGira: true,
-      se: { fatti: ["r5"], nonFatti: ["c5"] },
+      se: { fatti: ["r4"], nonFatti: ["c5"] },
       parla: [{
         fai: [
           { dice: "Da ieri vedo sfocato dall'occhio destro. Mi rifate gli occhiali?", chi: "Luisa" },
-          { scelta: "Cosa fai?", voci: [{ testo: "Vediamo insieme.", fai: [{ caso: "c5" }] }, { testo: "Un momento.", fai: [] }] },
-          {
-            se: { fatti: ["c5"] },
-            allora: [
-              { dice: "Con un allarme, niente misure: prima il medico.", chi: IRIDE },
-              { dice: "Il borgo è tarato: ecco l'attestato di Borgo Diottria!", chi: IRIDE },
-              { segna: "attestato" },
-              { fine: "Nella Valle delle Montature il Pressappoco ha aperto un banco…" },
-            ],
-          },
+          { scelta: "Cosa fai?", voci: [{ testo: "Vediamo insieme.", fai: [{ caso: "c5" }] }, { testo: "Un momento.", fai: [], annulla: true }] },
+          { se: { fatti: ["c5"] }, allora: FINALE },
         ],
       }],
     },
   ],
-  cose: [
-    { id: "campionario", tipo: "oggetto", x: 2, y: 1, solido: false, tocca: [{ se: { segni: ["furto"] }, fai: [{ dice: "Il Campionario Madre: i posti vuoti aspettano i Diottri." }] }, { fai: [{ dice: "Il Campionario Madre: i campioni di tutte le lenti." }] }] },
-    { id: "cassetta", tipo: "oggetto", x: 8, y: 3, solido: false, tocca: [{ fai: [{ dice: "La cassetta di prova: tutte le forze, a quarti di diottria." }] }] },
-    { id: "specchio", tipo: "oggetto", x: 6, y: 1, solido: false, tocca: [{ fai: [{ dice: "Ti guardi allo specchio. Gli occhiali ti stanno bene." }] }] },
-  ],
-  // il prologo in tre pezzi: chi chiude il gioco a metà, rientrando riprende da dove era rimasto
+  cose: [],
+  // il prologo, in pezzi: chi chiude il gioco a metà, rientrando riprende da dove era rimasto
   entrando: [
-    { se: { nonSegni: ["misurato"] }, fai: [...PROLOGO_MISURA, { segna: "misurato" }, ...PROLOGO_LENTI, ...PROLOGO_FURTO, { segna: "furto" }, ...PROLOGO_MATTINO, { segna: "prologo" }] },
-    { se: { nonSegni: ["furto"] }, fai: [...PROLOGO_LENTI, ...PROLOGO_FURTO, { segna: "furto" }, ...PROLOGO_MATTINO, { segna: "prologo" }] },
-    { se: { nonSegni: ["prologo"] }, fai: [...PROLOGO_MATTINO, { segna: "prologo" }] },
+    { se: { nonSegni: ["misurato"] }, fai: [...PROLOGO_MISURA, { segna: "misurato" }, ...PROLOGO_LENTI] },
+    { se: { segni: ["furto"], nonSegni: ["prologo"] }, fai: PROLOGO_MATTINO },
+    // il caso 5 fatto dal percorso, o il finale interrotto: l'attestato si prende entrando
+    { se: { fatti: ["c5"], segni: ["prologo"], nonSegni: ["attestato"] }, fai: FINALE },
   ],
 };
 
@@ -331,7 +403,7 @@ export const DIOTTRI_DEL_BORGO = ["r1", "r2", "r3", "r4", "r5"];
 export function nebbia(ctx: Contesto): number {
   if (!ctx.segni.includes("misurato")) return 4;
   if (!ctx.segni.includes("furto")) return 0;
-  return DIOTTRI_DEL_BORGO.filter(ctx.fatto).length >= DIOTTRI_DEL_BORGO.length ? 0 : DIOTTRI_DEL_BORGO.length - DIOTTRI_DEL_BORGO.filter(ctx.fatto).length;
+  return DIOTTRI_DEL_BORGO.length - DIOTTRI_DEL_BORGO.filter(ctx.fatto).length;
 }
 
 /** Giorno o sera: la sera va da Giulia (la sera ho gli occhi stanchi) a Davide (di notte, che riflessi). */
@@ -339,8 +411,10 @@ export const fase = (ctx: Contesto): "giorno" | "sera" => (ctx.fatto("c2") && !c
 
 /** Il prossimo passo, in una riga: per chi riprende dopo una pausa. */
 export function obiettivo(ctx: Contesto): string {
-  const it = BOTTEGA.personaggi[0].parla.find(b => !b.se || (b.se.nonFatti ?? []).every(id => !ctx.fatto(id)));
-  const c = it?.fai[0];
-  if (!ctx.segni.includes("prologo")) return "Entra nella bottega di Iride.";
+  if (!ctx.segni.includes("misurato")) return "Entra nella bottega di Iride.";
+  if (!ctx.segni.includes("furto")) return "Esci a guardare la strada.";
+  if (!ctx.segni.includes("prologo")) return "Torna nella bottega di Iride.";
+  if (ctx.fatto("c5") && !ctx.segni.includes("attestato")) return "Torna in bottega: Iride ti aspetta.";
+  const c = CONSIGLI.find(b => vale(b.se, ctx))?.fai[0];
   return c && "dice" in c ? c.dice : "";
 }

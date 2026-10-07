@@ -68,13 +68,21 @@ describe("Diottri · il mondo nell'interfaccia", () => {
     expect(nebbia(ctx())).toBe(4); // la tua miopia, prima del controllo
   });
 
-  it("il prologo: nella bottega Iride ti misura, poi il furto, poi le due regole", async () => {
+  it("il prologo: Iride ti misura, fuori la strada è nitida, la notte il furto, il mattino le regole", async () => {
     await porta(8, 8);
     expect(F.mondo.stato.mappa).toBe("bottega");
-    await aFinche(() => F.mondo.stato.segni.includes("prologo"));
-    expect(F.mondo.stato.segni).toEqual(expect.arrayContaining(["misurato", "furto", "prologo"]));
-    await aFinche(() => !F.mondo.occupato);
+    await aFinche(() => F.mondo.stato.segni.includes("misurato") && !F.mondo.occupato);
+    expect(F.mondo.stato.segni).not.toContain("furto");
+    await porta(4, 8); // fuori, con gli occhiali nuovi
+    expect(F.mondo.stato.mappa).toBe("borgo");
+    await pausa(60);
+    expect(nebbia(ctx())).toBe(0);
+    expect(F.mondo.testo).toContain("Che nitido");
+    await aFinche(() => F.mondo.stato.segni.includes("furto") && !F.mondo.occupato);
     expect(nebbia(ctx())).toBe(5); // senza i Diottri il borgo è starato
+    await porta(8, 8);
+    await aFinche(() => F.mondo.stato.segni.includes("prologo") && !F.mondo.occupato);
+    expect(F.mondo.stato.mappa).toBe("bottega");
   });
 
   it("Marco al binario apre il primo caso; finito, legge il tabellone e indica l'edicola", async () => {
@@ -134,6 +142,25 @@ describe("Diottri · il mondo nell'interfaccia", () => {
     tap("[data-act=mondo]");
     expect(F.S.screen).toBe("mondo");
     expect(app().querySelector(".gb")).not.toBeNull();
+  });
+
+  it("il menu non manda avanti i dialoghi; B sceglie «Dopo.»", async () => {
+    await vaiAccanto(18, 11); // Giulia
+    F.mondo.premi("a");
+    await pausa(40);
+    const prima = F.mondo.testo;
+    expect(prima).toContain("occhi stanchi");
+    F.mondo.premi("a"); // finisce di scrivere
+    F.mondo.premi("menu");
+    await pausa(30);
+    expect(F.mondo.testo).toBe(prima);
+    expect(F.mondo.menu).toBeNull();
+    F.mondo.premi("a");
+    await pausa(30);
+    expect(F.mondo.scelta).toEqual(["Sì, andiamo!", "Dopo."]);
+    F.mondo.premi("b");
+    await aFinche(() => !F.mondo.occupato);
+    expect(F.S.screen).toBe("mondo");
   });
 
   it("chiudi e riapri: sei dove eri, coi segni della storia", async () => {

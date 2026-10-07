@@ -143,7 +143,7 @@ function valuta(def: CasoDef, st: CasoState, b: BisognoDef): Bisogno {
     case "guida": {
       const f = occhiale(def, st).filtro;
       const vietato = !!f && !allaGuida(f.categoria);
-      return { ...base, tacche: 0, vietato, nota: vietato ? "la categoria 4 non va alla guida" : "si può guidare" };
+      return { ...base, tacche: 0, vietato, nota: vietato ? "la categoria 4 non va alla guida" : "va bene anche al volante" };
     }
     case "dubbio":
       return { ...base, tacche: 0, nota: "" };

@@ -29,6 +29,8 @@ interface Prog {
   registro: Record<string, { ms: number; volte: number }>;
   /** il mondo: dove sei e i segni della storia (dalla mandata 3) */
   mondo?: StatoMondo;
+  /** i riconoscimenti in cui si è vista la risposta: lì «Occhio esperto» non vale più */
+  aiutati?: string[];
 }
 interface State {
   screen: Screen;
@@ -47,6 +49,8 @@ interface State {
   ritorno: "mondo" | "home";
   /** l'evento del mondo che aspetta la fine del caso */
   risolvi: (() => void) | null;
+  /** il caso o il riconoscimento aperto è finito ed è già salvato */
+  concluso: boolean;
 }
 
 export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = {}) {
@@ -74,7 +78,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") save(); });
   window.addEventListener("pagehide", save);
 
-  let S: State = { screen: prog.chi ? "mondo" : "chi", id: null, caso: null, ric: null, sheet: null, logDa: 0, ultima: null, intro: [], scelta: { id: null, g: null }, mostraVis: "", t0: 0, conferma: false, ritorno: "mondo", risolvi: null };
+  let S: State = { screen: prog.chi ? "mondo" : "chi", id: null, caso: null, ric: null, sheet: null, logDa: 0, ultima: null, intro: [], scelta: { id: null, g: null }, mostraVis: "", t0: 0, conferma: false, ritorno: "mondo", risolvi: null, concluso: false };
 
   /* ---------- il mondo ---------- */
   if (!prog.mondo || !prog.mondo.mappa) prog.mondo = structuredClone(INIZIO);
@@ -154,9 +158,11 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
 
   function vHome() {
     const tu = prog.chi ? D.avatarSVG(D.ASPETTO_TU[prog.chi], 44) : "";
-    const benv = prog.benvenuto || prog.mondo?.segni.includes("prologo") ? "" :
-      `<section class="iride">${D.avatarSVG(D.ASPETTO_IRIDE, 56)}<div><p><b>Maestra Iride:</b> ${prog.chi === "donna" ? "Benvenuta" : "Benvenuto"} in bottega! Cinque clienti al banco, e cinque Diottri da ritrovare: le lenti e i pezzi del banco, scappati.</p>` +
-      `<p>Due regole: la gradazione si misura, o si legge sulla ricetta. Con un allarme, niente misure: prima il medico.</p><button class="btn" data-act="ok">Cominciamo</button></div></section>`;
+    const testa = `<header class="hhead">${tu}<div><h1 class="logo">Diottri</h1><p class="sotto">Il percorso: rigioca un passo quando vuoi</p></div>${HOME ? `<a class="ib casa" href="${esc(HOME)}" aria-label="Tutti i corsi">${D.ICON.back}</a>` : ""}</header>`;
+    // prima della storia il percorso è chiuso: si comincia nel borgo, dalla bottega di Iride
+    if (!prog.mondo?.segni.includes("prologo")) {
+      return `<main class="schermo home">${testa}<p class="nota centro">Il percorso si apre dopo la prima visita nella bottega di Iride.</p><button class="btn primaria" data-act="mondo">Torna al borgo</button></main>`;
+    }
     const steps = ORDINE.map((p, i) => {
       const open = aperto(i), f = prog.fatti[p.id];
       if (p.tipo === "caso") {
@@ -167,9 +173,9 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
       return `<button class="passo ric${open ? "" : " chiuso"}" data-act="apri" data-arg="${p.id}" ${open ? "" : "disabled"}>${f?.preso ? D.diottroRitratto(r.specie, 44) : `<span class="luccica">${D.ICON.luccica}</span>`}<span class="t"><small>Riconosci un Diottro</small>${f?.preso ? esc(sp.nome) : "Qualcosa luccica…"}<em>${esc(r.dove)}</em></span>${open ? (f?.preso ? `<span class="preso">${f.esperto ? "Occhio esperto" : "Preso"}</span>` : "") : D.ICON.lock}</button>`;
     }).join("");
     const tutti = ORDINE.every(p => fatto(p.id));
-    return `<main class="schermo home"><header class="hhead">${tu}<div><h1 class="logo">Diottri</h1><p class="sotto">Il percorso: rigioca un passo quando vuoi</p></div>${HOME ? `<a class="ib casa" href="${esc(HOME)}" aria-label="Tutti i corsi">${D.ICON.back}</a>` : ""}</header>` +
+    return `<main class="schermo home">${testa}` +
       `<button class="btn primaria" data-act="mondo">Torna al borgo</button>` +
-      benv + `<nav class="percorso">${steps}</nav>` +
+      `<nav class="percorso">${steps}</nav>` +
       (tutti ? `<section class="iride">${D.avatarSVG(D.ASPETTO_IRIDE, 56)}<div><p><b>Maestra Iride:</b> Fatto tutto! Rigioca quando vuoi: i clienti cambiano gradazione, i Diottri cambiano forza.</p></div></section>` : "") +
       `<div class="piede"><button class="btn sec" data-act="vassoio">Vassoio e Campionario</button></div></main>`;
   }
@@ -189,7 +195,8 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
     const rifl = def.bisogni.some(b => b.tipo === "riflessi") ? taccheRiflessi(riflessoAttuale(def, st)) / 3 : 0;
     return {
       svg: D.scenaSVG(def.scena, s, { riflessi: rifl }),
-      cap: `Come vede ${def.cliente.nome} · ${d === Infinity ? "lontano" : "da vicino"} · destro ${v.od.decimi}/10, sinistro ${v.os.decimi}/10 · ${sharpWords(s)}, ${workWords(s)}`,
+      cap: `Come vede ${def.cliente.nome} · ${d === Infinity ? "lontano" : "da vicino"} · destro ${v.od.decimi}/10, sinistro ${v.os.decimi}/10 · ${sharpWords(s)}, ${workWords(s)}` +
+        (def.id === ORDINE[0].id ? " · 10/10 è la vista piena" : ""),
     };
   }
 
@@ -310,6 +317,8 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
       riquadro(st.log, S.logDa, def) + `</section>`;
   }
 
+  const dove = () => (S.ritorno === "mondo" ? "Torna al borgo" : "Torna al percorso");
+
   function fineCaso(def: CasoDef, st: CasoState) {
     if (!st.fine) return "";
     const fin = K.stelleFinali(st);
@@ -318,7 +327,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
     return `<div class="velo pieno"></div><section class="overlay fine" role="dialog" aria-label="${esc(titolo)}"><h2 class="logo">${esc(titolo)}</h2>` +
       (ok ? stelle(fin, true) + perse(st) : `<p>${st.fine === "chiuso" ? "Non era un caso da medico: si rigioca." : "Con troppi errori il cliente se ne va: si rigioca."}</p>`) +
       riquadro(st.log, Math.max(0, st.log.length - 3), def) +
-      `<button class="btn primaria" data-act="fineCaso">${ok ? "Torna al percorso" : "Torna e riprova"}</button></section>`;
+      `<button class="btn primaria" data-act="fineCaso">${ok ? dove() : "Torna e riprova"}</button></section>`;
   }
 
   /* ---------- il riconoscimento ---------- */
@@ -387,7 +396,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
     if (!st.fine) return "";
     if (st.fine === "scappato") {
       return `<div class="velo pieno"></div><section class="overlay fine" role="dialog" aria-label="Scappato"><h2 class="logo">Scappato!</h2><p>Lo ritrovi dopo: le prove le hai viste.</p>` +
-        riquadro(st.log, Math.max(0, st.log.length - 3)) + `<button class="btn primaria" data-act="fineRic">Torna al percorso</button></section>`;
+        riquadro(st.log, Math.max(0, st.log.length - 3)) + `<button class="btn primaria" data-act="fineRic">${dove()}</button></section>`;
     }
     return `<div class="velo pieno"></div><section class="overlay fine" role="dialog" aria-label="Preso"><h2 class="logo">Preso!</h2>${st.occhioEsperto ? `<p class="badge">Occhio esperto: una prova sola</p>` : ""}${scheda(def.specie)}<button class="btn primaria" data-act="fineRic">Nel vassoio</button></section>`;
   }
@@ -398,14 +407,14 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
     const tutte = Object.keys(SPECIE) as SpecieId[];
     const reg = ORDINE.filter(p => prog.registro[p.id]).map(p => {
       const r = prog.registro[p.id];
-      const nome = p.tipo === "caso" ? `Caso ${CASO[p.id].n} · ${CASO[p.id].titolo}` : `Riconosci · ${RIC[p.id].dove}`;
+      const nome = p.tipo === "caso" ? `Caso ${CASO[p.id].n} · ${CASO[p.id].titolo}` : `Riconosci · ${RIC[p.id].dove.replace(/\.$/, "")}`;
       return `<li>${esc(nome)}: ${Math.max(1, Math.round(r.ms / 60000))} min, ${r.volte} ${r.volte === 1 ? "volta" : "volte"}</li>`;
     }).join("");
     return `<main class="schermo vassoio">${bar("Vassoio e Campionario")}` +
       `<section><h2>Il tuo vassoio</h2>${prog.vassoio.map(scheda).join("")}</section>` +
       `<section><h2>Il Campionario</h2><div class="campionario">${tutte.map(sp => prog.vassoio.includes(sp) ? `<div class="cs">${D.diottroRitratto(sp, 56)}<small>${esc(SPECIE[sp].nome)}</small></div>` : `<div class="cs ignoto">${D.diottroDavanti("sconosciuto", 56)}<small>???</small></div>`).join("")}</div></section>` +
       (reg ? `<section><h2>Registro</h2><ul class="registro">${reg}</ul></section>` : "") +
-      `<section class="reset">${S.conferma ? `<p>Cancello tutto e si ricomincia da capo?</p><button class="btn pericolo" data-act="resetSi">Sì, da capo</button> <button class="btn sec" data-act="resetNo">No</button>` : `<button class="btn sec" data-act="reset">Ricomincia da capo</button>`}</section></main>`;
+      `<section class="reset">${S.conferma ? `<p>Cancello tutto e si ricomincia da capo?</p><button class="btn sec" data-act="resetNo">No</button> <button class="btn pericolo" data-act="resetSi">Sì, da capo</button>` : `<button class="btn sec" data-act="reset">Ricomincia da capo</button>`}</section></main>`;
   }
 
   /* ---------- disegno ---------- */
@@ -420,7 +429,36 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
       case "vassoio": return vVassoio();
     }
   }
+  /** Un caso o un riconoscimento finito si salva subito, sulla schermata del risultato: chi chiude lì non perde niente. */
+  function concludi() {
+    if (S.concluso) return;
+    if (S.screen === "caso" && S.caso?.fine) {
+      const st = S.caso;
+      S.concluso = true;
+      registra(st.id);
+      if (K.riuscito(st)) {
+        const prima = prog.fatti[st.id]?.stelle;
+        const ora = K.stelleFinali(st);
+        prog.fatti[st.id] = { stelle: nStelle(prima) > nStelle(ora) ? prima : ora };
+      }
+      save();
+    } else if (S.screen === "ric" && S.ric?.fine) {
+      const def = RIC[S.id!], st = S.ric;
+      S.concluso = true;
+      registra(st.id);
+      // vista la risposta, «Occhio esperto» non vale più per quel Diottro
+      if (prog.aiutati?.includes(def.id)) st.occhioEsperto = false;
+      if (st.fine === "preso") {
+        if (!prog.vassoio.includes(def.specie)) prog.vassoio.push(def.specie);
+        const f = prog.fatti[def.id];
+        prog.fatti[def.id] = { preso: true, esperto: !!f?.esperto || st.occhioEsperto };
+      } else if (st.soluzioneMostrata && !prog.aiutati?.includes(def.id)) prog.aiutati = [...(prog.aiutati ?? []), def.id];
+      save();
+    }
+  }
+
   function render() {
+    concludi();
     // il mondo resta montato: il canvas, il riquadro e l'evento in corso non si ricreano a ogni tocco
     if (S.screen === "mondo" && root.querySelector(".gb")) return;
     guscio?.stacca();
@@ -431,7 +469,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
   /** Torna dove si era (il mondo o il percorso); se un evento del mondo aspettava, riparte. */
   function torna() {
     const r = S.risolvi;
-    S = { ...S, screen: S.ritorno, id: null, caso: null, ric: null, sheet: null, ultima: null, intro: [], mostraVis: "", conferma: false, risolvi: null };
+    S = { ...S, screen: S.ritorno, id: null, caso: null, ric: null, sheet: null, ultima: null, intro: [], mostraVis: "", conferma: false, risolvi: null, concluso: false };
     render();
     if (r) setTimeout(r, 0);
   }
@@ -469,7 +507,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
         const d = vb ? vb.d ?? 0.4 : Infinity;
         const eye = { rx: st.occhio.od, age: st.occhio.age };
         const senza: Sight = see(eye, PLANO, d), con: Sight = see(eye, l.od, d);
-        return D.lavoraSVG(senza.effort, con.effort);
+        return D.lavoraSVG(senza.effort, con.effort, d === Infinity ? "" : "da vicino");
       }
       case "polarizzate": return D.polarizzateSVG(true);
       case "riflesso": return D.riflessoSVG(o.antiriflesso);
@@ -478,14 +516,13 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
 
   const ACTS: Record<string, (a: string) => void> = {
     chi: a => { prog.chi = a === "donna" ? "donna" : "uomo"; save(); S.screen = "mondo"; },
-    ok: () => { prog.benvenuto = true; save(); S.ritorno = "home"; ACTS.apri(ORDINE[0].id); },
     home: () => { torna(); },
     mondo: () => { S.ritorno = "mondo"; S.risolvi = null; S.screen = "mondo"; },
     percorso: () => { S.ritorno = "mondo"; S.screen = "home"; },
     vassoio: () => { S.screen = "vassoio"; S.conferma = false; },
     apri: id => {
       if (S.screen === "home") S.ritorno = "home";
-      S.id = id; S.sheet = null; S.ultima = null; S.intro = []; S.mostraVis = ""; S.logDa = 0; S.t0 = Date.now();
+      S.id = id; S.sheet = null; S.ultima = null; S.intro = []; S.mostraVis = ""; S.logDa = 0; S.t0 = Date.now(); S.concluso = false;
       S.scelta = { id: null, g: null };
       if (CASO[id]) { S.caso = K.nuovoCaso(CASO[id], semeNuovo(), prog.vassoio); S.ric = null; S.screen = "caso"; }
       else { S.ric = R.nuovoRic(RIC[id], semeNuovo()); S.caso = null; S.screen = "ric"; }
@@ -516,17 +553,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
     visita: m => { const { def, st } = caso(); segna(); K.consigliaVisita(def, st, m as Motivo); S.sheet = null; },
     medico: u => { const { def, st } = caso(); segna(); K.medico(def, st, u === "subito" ? "subito" : "oggi"); S.sheet = null; },
     consegna: () => { const { def, st } = caso(); segna(); K.consegna(def, st); },
-    fineCaso: () => {
-      const st = S.caso!;
-      registra(st.id);
-      if (K.riuscito(st)) {
-        const prima = prog.fatti[st.id]?.stelle;
-        const ora = K.stelleFinali(st);
-        prog.fatti[st.id] = { stelle: nStelle(prima) > nStelle(ora) ? prima : ora };
-      }
-      save();
-      ACTS.home("");
-    },
+    fineCaso: () => { concludi(); ACTS.home(""); },
     provaRic: p => {
       const def = RIC[S.id!], st = S.ric!;
       segna();
@@ -547,17 +574,22 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
       R.riconosci(def, st, S.scelta.id!, S.scelta.g);
       S.sheet = null;
       S.scelta = { id: null, g: null };
-      if (st.fine === "preso") {
-        if (!prog.vassoio.includes(def.specie)) prog.vassoio.push(def.specie);
-        const f = prog.fatti[def.id];
-        prog.fatti[def.id] = { preso: true, esperto: !!f?.esperto || st.occhioEsperto };
-        save();
-      }
     },
-    fineRic: () => { registra(S.ric!.id); save(); ACTS.home(""); },
+    fineRic: () => { concludi(); ACTS.home(""); },
     reset: () => { S.conferma = true; },
     resetNo: () => { S.conferma = false; },
-    resetSi: () => { const chi = prog.chi; prog = fresh(); prog.chi = chi; save(); S.conferma = false; S.screen = "home"; },
+    resetSi: () => {
+      const chi = prog.chi;
+      prog = fresh();
+      prog.chi = chi;
+      prog.mondo = structuredClone(INIZIO);
+      guscio?.stacca();
+      guscio = null; // il mondo riparte da capo, col suo stato nuovo
+      save();
+      S.conferma = false;
+      S.ritorno = "mondo";
+      S.screen = "mondo";
+    },
   };
 
   root.addEventListener("click", e => {
@@ -568,7 +600,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
     if (!fn) return;
     fn(el.dataset.arg ?? "");
     render();
-    if (["apri", "ok", "home", "vassoio", "chi", "fineCaso", "fineRic"].includes(act)) window.scrollTo(0, 0);
+    if (["apri", "home", "vassoio", "chi", "fineCaso", "fineRic", "resetSi"].includes(act)) window.scrollTo(0, 0);
   });
 
   /* per i test e le prove alla cieca */

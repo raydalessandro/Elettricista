@@ -60,7 +60,7 @@ export async function giocaTutto(opts: { seme?: number; partita?: Partita; ferma
     async vai(dest) { Object.assign(st, { mappa: dest.mappa, x: dest.x, y: dest.y, dir: dest.dir }); await arrivo(); },
     gira(d) { st.dir = d; },
     async buio(t) { testi.push(t); },
-    async fine(t) { testi.push(t); },
+    async fine(t, titolo, sotto) { testi.push(titolo, t, ...(sotto ? [sotto] : [])); },
     segna(s) { if (!st.segni.includes(s)) st.segni.push(s); },
     togli(s) { st.segni = st.segni.filter(x => x !== s); },
   };
@@ -96,12 +96,17 @@ export async function giocaTutto(opts: { seme?: number; partita?: Partita; ferma
   }
 
   await arrivo();
+  let rientri = 0;
   let bloccato: string | null = null;
   for (let giro = 0; giro < 200; giro++) {
     if (opts.fermaDopo !== undefined && fatti.length >= opts.fermaDopo) break;
-    // il prologo: si entra nella bottega
+    // il prologo: in bottega la misura, fuori la strada nitida e la notte del furto, poi di nuovo in bottega
     if (!st.segni.includes("prologo")) {
-      if (st.mappa !== "bottega" && !(await entraIn("bottega"))) { bloccato = "non trovo la porta della bottega"; break; }
+      const fuori = st.segni.includes("misurato") && !st.segni.includes("furto");
+      const dove = fuori ? "borgo" : "bottega";
+      // il prologo va avanti entrando: se si è già lì e non è successo niente, si esce per rientrare
+      const verso = st.mappa === dove ? (dove === "bottega" ? "borgo" : "bottega") : dove;
+      if ((st.mappa === dove && ++rientri > 3) || !(await entraIn(verso))) { bloccato = `il prologo non va avanti (${st.mappa} → ${verso})`; break; }
       continue;
     }
     const prossimo = ORDINE.find(o => !fatti.includes(o.id));

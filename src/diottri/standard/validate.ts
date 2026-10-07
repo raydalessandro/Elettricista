@@ -173,9 +173,14 @@ export function validateDiottri(): Finding[] {
     const eventi: Evento[] = [
       ...m.personaggi.flatMap(p => p.parla.map(b => b.fai)),
       ...m.cose.flatMap(c => c.tocca.map(b => b.fai)),
+      ...m.timbri.flatMap(t => (t.tocca ?? []).map(b => b.fai)),
       ...(m.entrando ?? []).map(b => b.fai),
       ...m.porte.filter(p => p.chiusa).map(p => [{ dice: p.chiusa! }] as Evento),
     ];
+    // l'ancora è una cella libera: da lì riparte chi ha un salvataggio fuori posto
+    const [ax, ay] = m.ancora;
+    const va = m.legenda[m.righe[ay]?.[ax] ?? ""];
+    if (!va || va.solido) f("G2", `l'ancora ${ax},${ay} non è una cella dove si cammina`);
     for (const ev of eventi) {
       for (const t of testiEvento(ev)) {
         if (!stanno(t)) f("G1", `«${t}» non sta in tre righe da ${COLONNE}`);
@@ -187,7 +192,7 @@ export function validateDiottri(): Finding[] {
     }
   }
   // ogni passo del percorso si apre da qualche parte nel mondo
-  const aperti = new Set(Object.values(MAPPE).flatMap(m => [...m.personaggi.flatMap(p => p.parla.flatMap(b => apreEvento(b.fai))), ...m.cose.flatMap(c => c.tocca.flatMap(b => apreEvento(b.fai)))]));
+  const aperti = new Set(Object.values(MAPPE).flatMap(m => [...m.personaggi.flatMap(p => p.parla.flatMap(b => apreEvento(b.fai))), ...m.cose.flatMap(c => c.tocca.flatMap(b => apreEvento(b.fai))), ...m.timbri.flatMap(t => (t.tocca ?? []).flatMap(b => apreEvento(b.fai)))]));
   for (const o of ORDINE) if (!aperti.has(o.id)) out.push({ lv: `mondo`, code: "G2", sev: "errore", msg: `nessuno nel mondo apre «${o.id}»` });
 
   // l'ordine contiene tutto, una volta

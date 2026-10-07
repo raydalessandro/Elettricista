@@ -21,7 +21,7 @@ export interface Condizione {
 /** Un comando di un evento. Si eseguono in fila; quelli che aspettano chi gioca (dice, scelta, caso, ric) fermano la fila. */
 export type Comando =
   | { dice: string; chi?: string }
-  | { scelta: string; voci: { testo: string; fai: Comando[] }[] }
+  | { scelta: string; voci: { testo: string; fai: Comando[]; annulla?: boolean }[]; predefinita?: number }
   | { caso: string }
   | { ric: string }
   | { segna: string }
@@ -30,7 +30,8 @@ export type Comando =
   | { vai: { mappa: string; x: number; y: number; dir: Dir } }
   | { gira: Dir }
   | { buio: string }
-  | { fine: string };
+  /** il cartoncino di fine mondo: il titolo, il testo, e sotto l'aggancio al mondo dopo */
+  | { fine: string; titolo: string; sotto?: string };
 
 export type Evento = Comando[];
 
@@ -72,6 +73,8 @@ export interface Timbro {
   y: number;
   /** quando c'è (un cancello chiuso, poi aperto) */
   se?: Condizione;
+  /** cosa dice col tasto A, da qualunque lato lo si guardi */
+  tocca?: Battuta[];
 }
 
 export interface Porta {
@@ -101,6 +104,8 @@ export interface MappaDef {
   cose: Cosa[];
   /** cosa succede entrando (una volta per segno) */
   entrando?: Battuta[];
+  /** una cella sicura, da cui si arriva dappertutto: se un salvataggio ti mette in un posto pieno, si riparte da lì vicino */
+  ancora: [number, number];
 }
 
 /** La posizione di chi gioca e i segni della storia: è quello che si salva. */

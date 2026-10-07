@@ -101,7 +101,7 @@ export function leggiVecchi(def: CasoDef, st: CasoState) {
     return;
   }
   st.vecchiLetti = true;
-  say(st, "gioco", `Frontifocometro: OD ${rx(def.vecchi.od)}, OS ${rx(def.vecchi.os)}.`);
+  say(st, "gioco", `Frontifocometro: OD ${rx(def.vecchi.od)} (destro), OS ${rx(def.vecchi.os)} (sinistro).`);
   say(st, "cliente", def.vecchi.frase);
 }
 
@@ -262,6 +262,8 @@ export function chiudiProva(st: CasoState) {
 /** Quando la lente c'è, possono nascere dubbi. */
 function dopoLente(def: CasoDef, st: CasoState) {
   const l = st.lente!;
+  // lo spessore segue la gradazione: con quella nuova cambia anche lui
+  if (def.bisogni.some(b => b.tipo === "spessore") && l.fonte !== "vecchi") say(st, "gioco", "Lo spessore adesso si calcola sulla gradazione nuova.");
   const forte = Math.max(Math.abs(l.od.sph), Math.abs(l.os.sph)) >= 4;
   const piu = l.od.sph > 0 || l.os.sph > 0;
   apriDubbi(def, st, d => (d.quando === "lenteForte" && forte) || (d.quando === "lentePiu" && piu));

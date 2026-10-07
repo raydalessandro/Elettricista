@@ -36,7 +36,7 @@ Math.random = () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (
 if (SALVA && existsSync(SALVA)) w.localStorage.setItem("diottri.v1", readFileSync(SALVA, "utf8"));
 
 const { mountDiottri } = await import("../src/diottri/ui");
-const { MAPPE, nebbia, fase } = await import("../src/diottri/content/borgo");
+const { MAPPE, nebbia } = await import("../src/diottri/content/borgo");
 const { cosePresenti, personaggiPresenti, portaA, timbriPresenti, voce } = await import("../src/diottri/mondo/motore");
 const { OGGETTI } = await import("../src/diottri/grafica/oggetti");
 const app = w.document.getElementById("app")!;
@@ -48,6 +48,7 @@ interface Guscio {
   cammina(d: string): string;
   scorri(d: string): void;
   scelta: string[] | null;
+  fase: "giorno" | "sera";
   indiceScelta: number;
   riquadro: { chi: string; testo: string } | null;
   pieno: boolean;
@@ -64,16 +65,20 @@ const nelBorgo = () => D().S.screen === "mondo" && !!app.querySelector(".gb");
 let bottoni: HTMLElement[] = [];
 const spazi = (s: string) => s.replace(/\s+/g, " ").trim();
 
+/** Le parole dentro una frase (il grassetto) si attaccano al resto; gli altri pezzi si separano con uno spazio. */
+const IN_RIGA = new Set(["b", "strong", "em", "i", "a", "code", "abbr", "sup", "sub"]);
 function testo(el: Node): string {
   if (el.nodeType === 3) return el.textContent || "";
   if (el.nodeType !== 1) return "";
   const e = el as Element;
   const cls = e.getAttribute("class") || "";
-  if (e.tagName.toLowerCase() === "svg") return "";
+  const tag = e.tagName.toLowerCase();
+  if (tag === "svg") return "";
   if (/\bstella\b/.test(cls)) return ` ${/\bon\b/.test(cls) ? "★" : "☆"}${spazi(e.textContent || "")} `;
   if (/\b(tacche|fiducia|diff)\b/.test(cls) && e.getAttribute("aria-label")) return ` [${e.getAttribute("aria-label")}] `;
   if (/\besito\b/.test(cls)) return ` «${spazi(e.textContent || "")}» `;
-  return [...e.childNodes].map(testo).join(" ");
+  const dentro = [...e.childNodes].map(testo).join("");
+  return IN_RIGA.has(tag) ? dentro : ` ${dentro} `;
 }
 function immagine(svg: Element): string {
   const l = svg.getAttribute("aria-label");
@@ -126,16 +131,16 @@ const COSE: Record<string, [string, string]> = {
   edicola: ["e", "l'edicola"], tabellone: ["t", "il tabellone degli orari"], pensilina: ["s", "la pensilina della stazione"],
   fontana: ["f", "la fontana"], cancello_chiuso: ["c", "un cancello chiuso"], cancello_aperto: ["c", "un cancello aperto"],
   banco: ["k", "il banco (si parla da questa parte)"], scaffale: ["y", "uno scaffale"], specchio: ["j", "uno specchio"],
-  vetrinetta: ["v", "una vetrinetta"], campionario: ["w", "il campionario"], cassetta: ["z", "una cassetta"],
+  vetrinetta: ["v", "una vetrinetta"], campionario: ["w", "il campionario"], cassetta: ["z", "una cassetta"], pianta: ["x", "una pianta"],
 };
 function schermoMondo(): string {
   const g = D().mondo;
   const st = g.stato;
-  const m = MAPPE[st.mappa];
+  const m = MAPPE[st.mappa] ?? MAPPE.borgo;
   const ctx = { fatto: (id: string) => { const f = D().prog.fatti[id]; return !!f && (!!f.preso || !!f.stelle); }, segni: st.segni };
   const out: string[] = [];
   const n = m.fuori ? nebbia(ctx) : 0;
-  out.push(`# ${m.nome} · ${m.fuori ? (fase(ctx) === "sera" ? "è sera" : "è giorno") : "dentro"}${n ? ` · lo sfondo è sfocato (${n} su 5)` : ""}`);
+  out.push(`# ${m.nome} · ${m.fuori ? (g.fase === "sera" ? "è sera" : "è giorno") : "dentro"}${n ? ` · lo sfondo è sfocato (${n} su 5)` : ""}`);
   // gli oggetti: ogni cella piena sa di quale oggetto è
   const ogg = new Map<string, string>();
   for (const t of timbriPresenti(m, ctx)) {
@@ -173,13 +178,15 @@ function schermoMondo(): string {
   }
   out.push(...righeMappa.map(r => "   " + r.split("").join(" ")));
   out.push(`@ = tu, guardi ${st.dir === "giu" ? "giù" : st.dir === "su" ? "su" : `a ${st.dir}`} · . = si cammina · ` + [...legenda].map(([k, v]) => `${k} = ${v}`).join(" · "));
+  if (cosePresenti(m, ctx).some(q => q.tipo === "luccichio" && q.x === st.x && q.y === st.y)) out.push("(sotto i tuoi piedi: un luccichio)");
   if (g.velo) out.push(`(schermo scuro) ${spazi(g.velo)}`);
   const rq = g.riquadro;
   if (rq) out.push(`RIQUADRO — ${rq.chi ? rq.chi + " " : ""}${rq.testo}`);
   if (g.scelta) out.push("SCELTE: " + g.scelta.map((t, i) => `${i === g.indiceScelta ? "▶ " : "  "}${t}`).join(" / ") + "   (su/giu, poi a)");
   if (g.menu) out.push("MENU: " + g.menu.map(v => `${v.on ? "▶ " : "  "}${v.testo}`).join(" / ") + "   (su/giu, a per scegliere, b per chiudere)");
+  // il nome del posto compare un attimo, entrando: lo si scrive una volta
   const luogo = app.querySelector<HTMLElement>(".gb-luogo");
-  if (luogo && !luogo.hidden && luogo.textContent) out.push(`(in alto compare: ${luogo.textContent})`);
+  if (luogo && !luogo.hidden && luogo.textContent) { out.push(`(in alto compare un attimo: ${luogo.textContent})`); luogo.hidden = true; }
   return out.join("\n");
 }
 
@@ -226,7 +233,7 @@ for (const c of comandi) {
       if (esito === "porta") await pausa(260);
       if (esito === "bloccato") console.log(fatti ? `(${fatti} pass${fatti === 1 ? "o" : "i"}, poi non si passa)` : "(non si passa)");
       else if (esito === "occupato") console.log("(c'è un riquadro aperto: prima premi a)");
-      else if (fatti > 1 || (fatti === 1 && n > 1)) console.log(`(${fatti} passi)`);
+      else if (n > 1) console.log(`(${fatti} pass${fatti === 1 ? "o" : "i"})`);
     } else g.premi(cmd);
     await assesta();
     console.log(await schermo());

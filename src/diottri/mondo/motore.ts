@@ -87,6 +87,15 @@ export function chiDavanti(m: MappaDef, s: StatoMondo, ctx: Contesto): Davanti {
   if (p) return { tipo: "personaggio", p };
   const c = cosePresenti(m, ctx).find(q => q.x === x && q.y === y) ?? cosePresenti(m, ctx).find(q => q.tipo === "luccichio" && q.x === s.x && q.y === s.y);
   if (c) return { tipo: "cosa", c };
+  // una porta chiusa dice perché, anche col tasto A
+  const porta = portaA(m, x, y);
+  if (porta && !vale(porta.se, ctx)) return { tipo: "cosa", c: { id: `porta-${x}-${y}`, tipo: "oggetto", x, y, tocca: [{ fai: [{ dice: porta.chiusa ?? "È chiuso." }] }] } };
+  // un oggetto che ha qualcosa da dire, da qualunque sua cella
+  const t = timbriPresenti(m, ctx).find(q => {
+    const o = OGGETTI[q.ogg];
+    return !!q.tocca && !!o && x >= q.x && x < q.x + o.w && y >= q.y && y < q.y + o.h;
+  });
+  if (t) return { tipo: "cosa", c: { id: `timbro-${t.ogg}-${t.x}-${t.y}`, tipo: "oggetto", x, y, tocca: t.tocca! } };
   return null;
 }
 
@@ -130,18 +139,51 @@ export function passo(m: MappaDef, s: StatoMondo, dir: Dir, ctx: Contesto, giraP
 /** L'evento entrando in una mappa, se c'è. */
 export const eventoArrivo = (m: MappaDef, ctx: Contesto): Evento | null => (m.entrando ? battuta(m.entrando, ctx) : null);
 
+/** Una cella dove stare: (x, y) se è libera e ci si arriva; se no la libera più vicina, fra quelle raggiungibili
+    dall'ancora della mappa. Serve coi salvataggi vecchi, o quando un cliente compare proprio dove sei. */
+export function posizioneLibera(m: MappaDef, x: number, y: number, ctx: Contesto): [number, number] {
+  const W = larghezza(m), H = altezza(m);
+  const ogg = celleOggetti(m, ctx);
+  const dentro = (cx: number, cy: number) => cx >= 0 && cy >= 0 && cx < W && cy < H;
+  const libera = (cx: number, cy: number) => dentro(cx, cy) && !portaA(m, cx, cy) && !solidoA(m, cx, cy, ctx, ogg);
+  // dove si arriva dall'ancora: contano i muri e gli oggetti, non chi sta in piedi (le persone si spostano)
+  const [ax, ay] = m.ancora;
+  const raggiunte = new Set<string>([`${ax},${ay}`]);
+  const coda: [number, number][] = [[ax, ay]];
+  while (coda.length) {
+    const [cx, cy] = coda.shift()!;
+    for (const [dx, dy] of Object.values(DELTA)) {
+      const nx = cx + dx, ny = cy + dy, k = `${nx},${ny}`;
+      if (raggiunte.has(k) || !dentro(nx, ny) || portaA(m, nx, ny)) continue;
+      const v = voce(m, nx, ny);
+      if (!v || v.solido || ogg.has(k)) continue;
+      raggiunte.add(k);
+      coda.push([nx, ny]);
+    }
+  }
+  if (raggiunte.has(`${x},${y}`) && libera(x, y)) return [x, y];
+  let meglio: [number, number] = [ax, ay], d0 = Infinity;
+  for (const k of raggiunte) {
+    const [cx, cy] = k.split(",").map(Number);
+    const d = Math.abs(cx - x) + Math.abs(cy - y);
+    if (d < d0 && libera(cx, cy)) { d0 = d; meglio = [cx, cy]; }
+  }
+  return meglio;
+}
+
 /* ---------- gli eventi ---------- */
 
 /** Chi esegue gli eventi: l'interfaccia vera, o il robot. */
 export interface Regista {
   dice(testo: string, chi?: string): Promise<void>;
-  scelta(testo: string, voci: string[]): Promise<number>;
+  /** la scelta: le voci, quella su cui parte la freccia, e quella che sceglie il tasto B (se c'è) */
+  scelta(testo: string, voci: string[], opzioni?: { predefinita?: number; annulla?: number }): Promise<number>;
   caso(id: string): Promise<void>;
   ric(id: string): Promise<void>;
   vai(dest: { mappa: string; x: number; y: number; dir: Dir }): Promise<void>;
   gira(d: Dir): void;
   buio(testo: string): Promise<void>;
-  fine(testo: string): Promise<void>;
+  fine(testo: string, titolo: string, sotto?: string): Promise<void>;
   segna(s: string): void;
   togli(s: string): void;
 }
@@ -150,7 +192,8 @@ export async function esegui(ev: Evento, ctx: Contesto, r: Regista): Promise<voi
   for (const c of ev as Comando[]) {
     if ("dice" in c) await r.dice(c.dice, c.chi);
     else if ("scelta" in c) {
-      const i = await r.scelta(c.scelta, c.voci.map(v => v.testo));
+      const annulla = c.voci.findIndex(v => v.annulla);
+      const i = await r.scelta(c.scelta, c.voci.map(v => v.testo), { predefinita: c.predefinita, annulla: annulla >= 0 ? annulla : undefined });
       await esegui(c.voci[i]?.fai ?? [], ctx, r);
     } else if ("caso" in c) await r.caso(c.caso);
     else if ("ric" in c) await r.ric(c.ric);
@@ -160,7 +203,7 @@ export async function esegui(ev: Evento, ctx: Contesto, r: Regista): Promise<voi
     else if ("vai" in c) await r.vai(c.vai);
     else if ("gira" in c) r.gira(c.gira);
     else if ("buio" in c) await r.buio(c.buio);
-    else if ("fine" in c) await r.fine(c.fine);
+    else if ("fine" in c) await r.fine(c.fine, c.titolo, c.sotto);
   }
 }
 
@@ -172,7 +215,7 @@ export function testiEvento(ev: Evento): string[] {
     else if ("scelta" in c) { out.push(c.scelta); for (const v of c.voci) { out.push(v.testo); out.push(...testiEvento(v.fai)); } }
     else if ("se" in c) { out.push(...testiEvento(c.allora)); out.push(...testiEvento(c.altrimenti ?? [])); }
     else if ("buio" in c) out.push(c.buio);
-    else if ("fine" in c) out.push(c.fine);
+    else if ("fine" in c) out.push(c.titolo, c.fine, ...(c.sotto ? [c.sotto] : []));
   }
   return out;
 }

@@ -2,10 +2,10 @@
    Lo schermo 160×144 a pixel netti dentro una scocca da console, la croce e i tasti A e B sotto, come un
    Game Boy tenuto in verticale. Qui ci sono il ciclo dei fotogrammi, i tasti (dito e tastiera), il riquadro
    dei dialoghi, le scelte, il menu, le porte e gli eventi. La logica sta in motore.ts; il disegno in disegno.ts. */
-import { fase, MAPPE, nebbia, obiettivo } from "../content/borgo";
+import { fase, INIZIO, MAPPE, nebbia, obiettivo } from "../content/borgo";
 import { CELLA } from "../grafica/formato";
 import { componi, SCHERMO_H, SCHERMO_W } from "./disegno";
-import { chiDavanti, esegui, eventoArrivo, eventoDavanti, passo, type Regista } from "./motore";
+import { chiDavanti, esegui, eventoArrivo, eventoDavanti, passo, posizioneLibera, type Regista } from "./motore";
 import { type Contesto, DELTA, type Dir, type Evento, type StatoMondo } from "./tipi";
 
 export interface Collegamenti {
@@ -48,7 +48,9 @@ export function creaGuscio(c: Collegamenti) {
   let versi: Record<string, Dir> = {};
   let menuAperto = false;
   let attesa: ((t: Tasto | number) => void) | null = null; // chi aspetta un tasto (riquadro, scelta, buio)
-  let scelta: { voci: string[]; i: number } | null = null;
+  let scelta: { voci: string[]; i: number; annulla?: number } | null = null;
+  /** il giorno o la sera che si vede: cambia sotto il velo nero, non a metà di un dialogo */
+  let faseVista = fase(ctx);
   let testoPieno = true;
   let typer = 0;
   let avviato = false;
@@ -108,10 +110,23 @@ export function creaGuscio(c: Collegamenti) {
     window.addEventListener("resize", adatta);
     ferma(raf);
     raf = rAF(ciclo);
+    if (!occupato) sistema();
     if (!avviato) {
       avviato = true;
       arrivo(true);
+    } else if (!occupato && !attesa) {
+      // di ritorno da un caso fatto dal percorso: se la storia ha un arrivo in sospeso (il finale), parte adesso
+      const ev = eventoArrivo(mappa(), ctx);
+      if (ev) void evento(ev);
     }
+  }
+
+  /** Dove sei deve essere un posto dove si sta: una mappa che c'è, una cella libera (anche se un cliente è appena comparso lì). */
+  function sistema() {
+    if (!MAPPE[st.mappa]) Object.assign(st, structuredClone(INIZIO), { segni: st.segni });
+    const [x, y] = posizioneLibera(mappa(), st.x, st.y, ctx);
+    if (x !== st.x || y !== st.y) { st.x = x; st.y = y; mossa = null; c.salva(); }
+    faseVista = fase(ctx);
   }
 
   function stacca() {
@@ -170,10 +185,12 @@ export function creaGuscio(c: Collegamenti) {
   function premi(t: Tasto) {
     if (attesa) {
       if (scelta) {
-        if (t === "a") { const i = scelta.i; scelta = null; const r = attesa; attesa = null; r(i); }
+        const i = t === "a" ? scelta.i : t === "b" ? scelta.annulla : undefined;
+        if (i !== undefined) { scelta = null; const r = attesa; attesa = null; r(i); }
         return;
       }
-      if (!testoPieno && (t === "a" || t === "b")) { finisciTesto(); return; }
+      if (t === "menu") return; // il menu non manda avanti i dialoghi
+      if (!testoPieno) { finisciTesto(); return; }
       const r = attesa; attesa = null; r(t);
       return;
     }
@@ -221,6 +238,7 @@ export function creaGuscio(c: Collegamenti) {
       occupato = false;
       versi = {};
       nascondi(".gb-riquadro");
+      faseVista = fase(ctx);
       c.salva();
     }
   }
@@ -269,10 +287,10 @@ export function creaGuscio(c: Collegamenti) {
       mostraTesto(testo, chi);
       await aspetta();
     },
-    async scelta(testo, voci) {
+    async scelta(testo, voci, opzioni) {
       mostraTesto(testo);
       finisciTesto();
-      scelta = { voci, i: 0 };
+      scelta = { voci, i: opzioni?.predefinita ?? 0, annulla: opzioni?.annulla };
       disegnaScelte();
       const i = await aspetta();
       nascondi(".gb-scelte");
@@ -294,16 +312,17 @@ export function creaGuscio(c: Collegamenti) {
       nascondi(".gb-riquadro");
       const v = q<HTMLElement>(".gb-velo");
       if (v) { v.hidden = false; v.textContent = genere(testo); v.classList.add("su"); }
+      faseVista = fase(ctx);
       await new Promise<void>(res => {
         const t = window.setTimeout(() => { if (attesa) { attesa = null; res(); } }, 1800);
         attesa = () => { clearTimeout(t); res(); };
       });
       if (v) { v.classList.remove("su"); v.hidden = true; v.textContent = ""; }
     },
-    async fine(testo) {
+    async fine(testo, titolo, sotto) {
       nascondi(".gb-riquadro");
       const v = q<HTMLElement>(".gb-velo");
-      if (v) { v.hidden = false; v.classList.add("su", "fine"); v.innerHTML = `<b>Fine del Borgo</b><span>${esc(genere(testo))}</span><small>A per continuare</small>`; }
+      if (v) { v.hidden = false; v.classList.add("su", "fine"); v.innerHTML = `<b>${esc(genere(titolo))}</b><span>${esc(genere(testo))}</span>${sotto ? `<em>${esc(genere(sotto))}</em>` : ""}<small>A per continuare</small>`; }
       await aspetta();
       if (v) { v.classList.remove("su", "fine"); v.hidden = true; v.textContent = ""; }
     },
@@ -321,6 +340,7 @@ export function creaGuscio(c: Collegamenti) {
     st.y = dest.y;
     st.dir = dest.dir;
     mossa = null;
+    sistema();
     c.salva();
     if (v) { v.classList.remove("su"); v.hidden = true; }
     await arrivo(false);
@@ -350,7 +370,7 @@ export function creaGuscio(c: Collegamenti) {
     }
     if (ora - giratoA < GIRO_MS) return;
     const p = passo(m, st, d, ctx, false);
-    if (p.esito === "mosso") { mossa = { da: prima, t0: ora }; passi++; }
+    if (p.esito === "mosso") { mossa = { da: prima, t0: ora }; passi++; c.salva(); }
     else if (p.esito === "porta") { tenuto = null; void (async () => { occupato = true; try { await vai(p.porta.verso); } finally { occupato = false; } })(); }
     else if (p.esito === "chiusa") { tenuto = null; void evento([{ dice: p.testo }]); }
   }
@@ -362,6 +382,7 @@ export function creaGuscio(c: Collegamenti) {
     const p = passo(mappa(), st, d, ctx, false);
     if (p.esito === "porta") { void vai(p.porta.verso); return "porta"; }
     if (p.esito === "chiusa") { void evento([{ dice: p.testo }]); return "chiusa"; }
+    if (p.esito === "mosso") c.salva();
     return p.esito;
   }
 
@@ -386,7 +407,7 @@ export function creaGuscio(c: Collegamenti) {
       py = (mossa.da[1] + (st.y - mossa.da[1]) * k) * CELLA;
       passoN = k > 0.2 && k < 0.8 ? 1 : 0;
     }
-    const luce = m.fuori ? fase(ctx) : "interno";
+    const luce = m.fuori ? faseVista : "interno";
     const f = componi({ m, luce, ctx, tu: { px, py, dir: st.dir, passo: passoN, figura: c.chi() === "donna" ? "tu_donna" : "tu_uomo", alterna: passi % 2 === 1 }, versi, t: ora });
     g1.putImageData(new ImageData(f.sfondo.data, SCHERMO_W, SCHERMO_H), 0, 0);
     g2.clearRect(0, 0, SCHERMO_W, SCHERMO_H);
@@ -413,7 +434,9 @@ export function creaGuscio(c: Collegamenti) {
     get pieno() { return testoPieno; },
     get indiceScelta() { return scelta ? scelta.i : -1; },
     get menu() { return menuAperto ? [...(q(".gb-menu")?.querySelectorAll<HTMLElement>("[data-voce]") ?? [])].map(v => ({ voce: v.dataset.voce!, testo: v.textContent ?? "", on: v.classList.contains("on") })) : null; },
-    get velo() { const v = q<HTMLElement>(".gb-velo"); return v && !v.hidden ? (v.textContent ?? "") : ""; },
+    get velo() { const v = q<HTMLElement>(".gb-velo"); return v && !v.hidden ? (v.children.length ? [...v.children].map(x => x.textContent ?? "").join(" · ") : v.textContent ?? "") : ""; },
+    /** il giorno o la sera che si vede adesso */
+    get fase() { return faseVista; },
     stato: st,
     DELTA,
   };

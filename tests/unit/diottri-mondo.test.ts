@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { ORDINE } from "../../src/diottri/content";
 import { fase, INIZIO, MAPPE, nebbia } from "../../src/diottri/content/borgo";
-import { chiDavanti, eventoArrivo, passo, personaggiPresenti, solidoA, strada } from "../../src/diottri/mondo/motore";
+import { chiDavanti, eventoArrivo, eventoDavanti, passo, personaggiPresenti, posizioneLibera, solidoA, strada } from "../../src/diottri/mondo/motore";
 import { giocaTutto } from "../../src/diottri/mondo/robot";
 import type { Contesto, StatoMondo } from "../../src/diottri/mondo/tipi";
 
@@ -45,9 +45,10 @@ describe("Diottri · il motore della mappa", () => {
     expect(chi([])).toContain("marco");
     expect(chi([])).not.toContain("giulia");
     expect(chi(["c1", "r1"])).toContain("giulia");
-    expect(chi(["c1", "r1", "c2", "r2"])).toContain("davide");
-    expect(chi(["c1", "r1", "c2", "r2", "c3", "r3"])).toContain("paolo");
-    expect(chi(["c1", "r1", "c2", "r2", "c3", "r3", "c4", "r4", "r5"])).toContain("luisa");
+    expect(chi(["c1", "r1", "c2", "r2"])).not.toContain("davide"); // prima Cello: calibro e ponte servono a lui
+    expect(chi(["c1", "r1", "c2", "r2", "r5"])).toContain("davide");
+    expect(chi(["c1", "r1", "c2", "r2", "r5", "c3", "r3"])).toContain("paolo");
+    expect(chi(["c1", "r1", "c2", "r2", "r5", "c3", "r3", "c4", "r4"])).toContain("luisa");
     expect(personaggiPresenti(MAPPE.borgo, contesto([], [])).map(p => p.id)).not.toContain("marco"); // prima del prologo no
   });
 
@@ -59,14 +60,44 @@ describe("Diottri · il motore della mappa", () => {
     expect(nebbia(contesto(["r1", "r2", "r3", "r4", "r5"], DOPO_PROLOGO))).toBe(0);
   });
 
-  it("il prologo interrotto a metà riprende da dove era rimasto", () => {
-    const resto = (segni: string[]) => JSON.stringify(eventoArrivo(MAPPE.bottega, contesto([], segni)));
-    expect(resto(["inizio"])).toContain("Buongiorno");
-    expect(resto(["inizio", "misurato"])).not.toContain("Buongiorno");
-    expect(resto(["inizio", "misurato"])).toContain("Quella notte");
-    expect(resto(["inizio", "misurato", "furto"])).not.toContain("Quella notte");
-    expect(resto(["inizio", "misurato", "furto"])).toContain('"segna":"prologo"');
+  it("il prologo: la misura in bottega, la strada nitida e il furto fuori, il mattino di nuovo in bottega", () => {
+    const entrando = (mappa: string, segni: string[]) => JSON.stringify(eventoArrivo(MAPPE[mappa], contesto([], segni)));
+    expect(entrando("bottega", ["inizio"])).toContain("Buongiorno");
+    expect(entrando("bottega", ["inizio"])).toContain("Esca a guardare la strada");
+    expect(nebbia(contesto([], ["inizio", "misurato"]))).toBe(0); // con gli occhiali nuovi, la strada nitida
+    expect(entrando("borgo", ["inizio", "misurato"])).toContain("Quella notte");
+    expect(entrando("bottega", ["inizio", "misurato"])).toBe("null"); // in bottega non succede niente: si esce
+    expect(entrando("bottega", ["inizio", "misurato", "furto"])).toContain("Diamoci del tu");
+    expect(entrando("bottega", ["inizio", "misurato", "furto"])).toContain('"segna":"prologo"');
+    expect(entrando("borgo", ["inizio", "misurato", "furto"])).toBe("null");
     expect(eventoArrivo(MAPPE.bottega, contesto([], DOPO_PROLOGO))).toBeNull();
+  });
+
+  it("il finale si prende anche entrando in bottega, se il caso 5 è fatto e l'attestato no", () => {
+    const tutto = ORDINE.map(o => o.id);
+    expect(JSON.stringify(eventoArrivo(MAPPE.bottega, contesto(tutto, DOPO_PROLOGO)))).toContain('"segna":"attestato"');
+    expect(eventoArrivo(MAPPE.bottega, contesto(tutto, [...DOPO_PROLOGO, "attestato"]))).toBeNull();
+  });
+
+  it("un salvataggio fuori posto riparte dalla cella libera più vicina", () => {
+    const ctx = contesto([], DOPO_PROLOGO);
+    expect(posizioneLibera(MAPPE.borgo, 14, 20, ctx)).toEqual([14, 20]); // libera: resta lì
+    const [x, y] = posizioneLibera(MAPPE.borgo, 25, 23, ctx); // nel lago
+    expect(solidoA(MAPPE.borgo, x, y, ctx)).toBe(false);
+    expect(Math.abs(x - 25) + Math.abs(y - 23)).toBeLessThanOrEqual(3);
+    const [bx, by] = posizioneLibera(MAPPE.bottega, 40, 40, ctx); // fuori dalla mappa
+    expect(solidoA(MAPPE.bottega, bx, by, ctx)).toBe(false);
+    const sotto = posizioneLibera(MAPPE.borgo, 10, 3, ctx); // sopra Marco
+    expect(sotto).not.toEqual([10, 3]);
+  });
+
+  it("le porte chiuse e gli oggetti rispondono al tasto A", () => {
+    const ctx = contesto([], DOPO_PROLOGO);
+    const ev = (mappa: string, x: number, y: number, dir: StatoMondo["dir"]) => JSON.stringify(eventoDavanti(MAPPE[mappa], { mappa, x, y, dir, segni: ctx.segni }, ctx)?.evento ?? null);
+    expect(ev("borgo", 2, 8, "su")).toContain("È chiuso");
+    expect(ev("borgo", 10, 2, "sinistra")).toContain("tabellone"); // il tabellone, da destra
+    expect(ev("bottega", 2, 4, "sinistra")).toContain("Montature in vetrina");
+    expect(ev("bottega", 3, 2, "su")).toContain("posti vuoti");
   });
 
   it("la sera va da Giulia a Davide", () => {

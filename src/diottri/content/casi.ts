@@ -40,7 +40,7 @@ export const CASI: CasoDef[] = [
     posti: {
       materiale: MAT_POCHE,
       trattamento: [
-        { id: "no", nome: "Solo indurente", esito: "bene", perche: "Qui non serve altro.", antiriflesso: false },
+        { id: "no", nome: "Solo antigraffio", esito: "bene", perche: "Qui non serve altro.", antiriflesso: false },
         { id: "blu", nome: "Filtro luce blu", esito: "bene", perche: "Si può offrire: per gli schermi è una comodità.", filtroBlu: true },
       ],
       montatura: [{ id: "sua", nome: "La sua, 50□18", esito: "bene", perche: "La sua montatura va bene.", montatura: { calibro: 50, ponte: 18 } }],
@@ -79,7 +79,7 @@ export const CASI: CasoDef[] = [
       materiale: MAT_POCHE,
       trattamento: [
         {
-          id: "no", nome: "Solo indurente", esito: "bene", perche: "Il difetto lo corregge il più.", antiriflesso: false,
+          id: "no", nome: "Solo antigraffio", esito: "bene", perche: "Il difetto lo corregge il più.", antiriflesso: false,
           seScoperto: { rivela: "schermi", esito: "ok", perche: "Sta tanto al computer: per lo schermo le serve un trattamento." },
         },
         { id: "blu", nome: "Filtro luce blu", esito: "bene", perche: "Al computer è una comodità; il difetto lo corregge il più.", filtroBlu: true },
@@ -133,12 +133,12 @@ export const CASI: CasoDef[] = [
         { id: "pc", nome: "Policarbonato", esito: "ok", perche: "Più sottile dell'1,5, ma meno dell'1,67.", materiale: "pc" },
       ],
       trattamento: [
-        { id: "no", nome: "Solo indurente", esito: "no", perche: "Di notte, in autostrada, senza antiriflesso i riflessi restano.", antiriflesso: false },
+        { id: "no", nome: "Solo antigraffio", esito: "no", perche: "Di notte, in autostrada, senza antiriflesso i riflessi restano.", antiriflesso: false },
         { id: "ar", nome: "Antiriflesso", esito: "bene", perche: "Di notte toglie quasi tutti i riflessi della lente.", antiriflesso: true, serve: "verdino" },
       ],
       montatura: [
         { id: "sua", nome: "La sua, 56□18", esito: "ok", perche: "Calibro grande e centri lontani dalle pupille: il bordo resta spesso.", montatura: { calibro: 56, ponte: 18 } },
-        { id: "m50", nome: "Più piccola, 50□18", esito: "bene", perche: "Più piccolo il calibro, più sottile la lente.", montatura: { calibro: 50, ponte: 18 } },
+        { id: "m50", nome: "Più piccola, 50□18", esito: "bene", perche: "Calibro 50, il primo numero: più piccolo, più sottile la lente.", montatura: { calibro: 50, ponte: 18 } },
       ],
     },
     serveLente: true,
@@ -240,7 +240,7 @@ export const CASI: CasoDef[] = [
     // l'occhiale c'è come negli altri casi: l'allarme si scopre chiedendo, non guardando lo schermo
     posti: {
       materiale: [{ id: "cr39", nome: "Organico 1,5", esito: "bene", perche: "Con poche diottrie l'1,5 va benissimo.", materiale: "cr39" }],
-      trattamento: [{ id: "no", nome: "Solo indurente", esito: "bene", perche: "Qui non serve altro.", antiriflesso: false }],
+      trattamento: [{ id: "no", nome: "Solo antigraffio", esito: "bene", perche: "Qui non serve altro.", antiriflesso: false }],
       montatura: [{ id: "sua", nome: "La sua, 52□18", esito: "bene", perche: "La sua montatura va bene.", montatura: { calibro: 52, ponte: 18 } }],
     },
     serveLente: false,
@@ -251,11 +251,12 @@ export const CASI: CasoDef[] = [
   },
 ];
 
-/** L'ordine della mandata: un caso, un riconoscimento. */
+/** L'ordine del Borgo: ogni Diottro ritrovato serve al cliente dopo. Bombo (i più) a Giulia; Verdino (l'antiriflesso)
+    e Cello (calibro e ponte sull'asta) a Davide; Polare a Paolo. Rullo, il cilindro, chiude il giro prima di Luisa. */
 export const ORDINE: { tipo: "caso" | "ric"; id: string }[] = [
   { tipo: "caso", id: "c1" }, { tipo: "ric", id: "r1" },
   { tipo: "caso", id: "c2" }, { tipo: "ric", id: "r2" },
-  { tipo: "caso", id: "c3" }, { tipo: "ric", id: "r3" },
-  { tipo: "caso", id: "c4" }, { tipo: "ric", id: "r4" },
-  { tipo: "ric", id: "r5" }, { tipo: "caso", id: "c5" },
+  { tipo: "ric", id: "r5" }, { tipo: "caso", id: "c3" },
+  { tipo: "ric", id: "r3" }, { tipo: "caso", id: "c4" },
+  { tipo: "ric", id: "r4" }, { tipo: "caso", id: "c5" },
 ];
