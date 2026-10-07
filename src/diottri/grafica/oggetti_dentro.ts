@@ -7,7 +7,6 @@ import type { Luce } from "./tavolozze";
 
 type F = (x: number, y: number) => string;
 const disegna = (w: number, h: number, f: F) => Array.from({ length: h * 16 }, (_, y) => Array.from({ length: w * 16 }, (_, x) => f(x, y)).join(""));
-const griglia = (w: number, h: number, f: (cx: number, cy: number) => string) => Array.from({ length: h }, (_, cy) => Array.from({ length: w }, (_, cx) => f(cx, cy)));
 const pieno = (w: number, h: number) => Array.from({ length: h }, () => "x".repeat(w));
 
 export const OGGETTI_DENTRO: Record<string, Oggetto> = {
