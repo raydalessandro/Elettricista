@@ -4,7 +4,7 @@ Due corsi di formazione per Ray (Milano), nello stesso sito. Esce **un capitolo 
 
 - **Fase Neutro Terra** (`/elettricista`): l'impianto elettrico di casa, in cantiere.
 - **Sfera Cilindro Asse** (`/ottica`): il mestiere dell'ottico a 360 gradi, per chi sa già vendere (conosce la PNL, vende da anni). Il corso non insegna a vendere: insegna l'ottica. Pochissima teoria, molto da vedere, poi i casi al banco.
-- **Diottri** (`/diottri`, mandata 2: i due giri con la grafica provvisoria): un gioco di ruolo in stile Game Boy Color che insegna l'ottica giocando, accanto al corso di ottica. Progetto in `docs/gioco/PROGETTO.md`, regole in `docs/gioco/STANDARD.md`. Sta in `src/diottri/`; i numeri dell'ottica li prende da `src/ottica/core`, senza cambiare come si comporta il corso.
+- **Diottri** (`/diottri`: il Borgo Diottria, un mondo da girare con i due giri dentro): un gioco di ruolo in stile Game Boy Color che insegna l'ottica giocando, accanto al corso di ottica. Progetto in `docs/gioco/PROGETTO.md`, regole in `docs/gioco/STANDARD.md`, stile dei disegni in `docs/gioco/STILE.md`. Sta in `src/diottri/`; i numeri dell'ottica li prende da `src/ottica/core`, senza cambiare come si comporta il corso.
 - La home `/` fa scegliere il corso e mostra le stelle di ognuno; sotto, il collegamento al gioco.
 - Sito: Next.js su Vercel, da questo repository (`main` si pubblica da solo).
 - Anteprime in un file solo: `npm run build:artifact` → `dist/fase-neutro-terra.html`, `dist/sfera-cilindro-asse.html` e `dist/diottri.html` (si pubblicano come artifact su claude.ai).
@@ -23,7 +23,8 @@ npm run packets      # elettricista: pacchetti per la prova alla cieca (dist/pla
 npm run packets:ottica   # ottica: pacchetti per la prova alla cieca (dist/playtest-ottica; serve build:artifact)
 npx tsx scripts/banco.ts g1 1      # elettricista: banco guasti da riga di comando (comandi da stdin)
 npx tsx scripts/negozio.ts o1 7    # ottica: prova lenti e banco da riga di comando; il seme sceglie la ricetta del cliente
-npx tsx scripts/diottri.ts 7       # Diottri: lo schermo del gioco in testo, tocchi da stdin (DIOTTRI_SALVA=file.json tiene i progressi)
+npx tsx scripts/diottri.ts 7       # Diottri: il borgo (mappa in caratteri: su/giu/sinistra/destra [n], a, b, menu) e il banco (bottoni numerati) in testo, da stdin; DIOTTRI_SALVA=file.json tiene i progressi
+npx tsx scripts/diottri-anteprima.ts mappa borgo sera   # Diottri: i disegni in PNG (mappa, mattonelle, oggetti, figure) in dist/anteprime/
 ```
 
 ## Dove sta cosa
@@ -47,7 +48,9 @@ npx tsx scripts/diottri.ts 7       # Diottri: lo schermo del gioco in testo, toc
 | `src/ottica/standard/validate.ts` | Ottica · controllo automatico dello standard (O1–O10, con ogni variante) |
 | `src/ottica/ui.ts` | Ottica · interfaccia (stringhe HTML + un ascoltatore), montata da `src/components/Ottica.tsx`; stile in `src/app/ottica.css`, tutto sotto `.ott` |
 | `src/diottri/core/` | Diottri · motori senza disegno: il caso (`caso.ts`), le tacche dai modelli (`valuta.ts`), il riconoscimento (`riconosci.ts`), il risolutore, i semi |
-| `src/diottri/content/` | Diottri · casi, riconoscimenti, specie, l'ordine dei passi |
+| `src/diottri/content/` | Diottri · casi, riconoscimenti, specie, l'ordine dei passi; il mondo in `borgo.ts` (mappe, personaggi, prologo, finale) |
+| `src/diottri/mondo/` | Diottri · il mondo: motore senza disegno (`motore.ts`: passi, porte, chi c'è davanti, eventi), disegno (`disegno.ts`), la console sul telefono (`guscio.ts`), il robot che gioca tutto il borgo (`robot.ts`) |
+| `src/diottri/grafica/` | Diottri · i disegni come dati: mattonelle, oggetti, figure, tavolozze di giorno, sera e dentro |
 | `src/diottri/standard/validate.ts` | Diottri · controllo automatico (G1–G9: riquadro 3×24, casi ben fatti, risolutore da tre stelle, elenco nero) |
 | `src/diottri/ui.ts`, `src/diottri/draw.ts` | Diottri · interfaccia (stringhe HTML + un ascoltatore) e disegni; montata da `src/components/Diottri.tsx`, stile in `src/app/diottri.css`, tutto sotto `.dio` |
 | `tests/unit/` | Vitest: motori, standard, giri completi in jsdom |

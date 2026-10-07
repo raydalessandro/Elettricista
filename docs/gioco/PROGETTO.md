@@ -1,6 +1,6 @@
 # Diottri · progetto del gioco
 
-Versione 0.6 · 7 ottobre 2026 · approvato da Ray; mandata 2 uscita, da giocare
+Versione 0.7 · 7 ottobre 2026 · approvato da Ray; mandata 2 uscita; il Borgo Diottria da girare, da giocare
 
 Un gioco di ruolo con le creature, in stile Game Boy Color, dove tutto è ottica. Sta accanto al corso «Sfera Cilindro Asse»: il corso è il prontuario da tasca, il gioco è la ripetizione che si fa per divertimento, la sera, anche per un'ora di fila. Si finisce in circa otto ore, e dopo la fine la bottega resta aperta.
 
@@ -369,7 +369,7 @@ Ogni mandata finisce come un capitolo del corso: controllo automatico, revisione
 
 ## La mandata 2, com'è uscita
 
-- **Dove:** `/diottri`, collegato dalla home; anteprima `dist/diottri.html`. Cinque casi e cinque riconoscimenti, in fila: c1, r1, c2, r2, c3, r3, c4, r4, r5, c5.
+- **Dove:** `/diottri`, collegato dalla home; anteprima `dist/diottri.html`. Cinque casi e cinque riconoscimenti, in fila (l'ordine di adesso è nel Borgo, sotto).
 - **Grafica provvisoria:** carattere a pixel Jersey 10 (5, 8 e C si leggono bene; Pixelify Sans no), creature semplici, scene del corso.
 - **Dopo la prova alla cieca e la revisione di ottica:**
   - le due regole si dicono all'inizio: la gradazione si misura (o si legge sulla ricetta); con un allarme niente misure, prima il medico. La finestra del medico dice quando si sceglie «subito», «oggi» o la visita;
@@ -382,7 +382,20 @@ Ogni mandata finisce come un capitolo del corso: controllo automatico, revisione
   - al lago, l'aggiuntivo da sole polarizzato che si alza in galleria;
   - con un allarme, la domanda «Altri disturbi nuovi?»: se sì, il 112;
   - anche con la ricetta, le lenti nell'occhiale di prova e i 10/10 prima di ordinare;
-  - una montatura coi centri vicini alla distanza pupillare (48□18) per vedere il decentramento; «Solo indurente» al posto di «Nessuno»; l'anima di metallo nell'asta dell'acetato.
+  - una montatura coi centri vicini alla distanza pupillare (48□18) per vedere il decentramento; l'anima di metallo nell'asta dell'acetato. («Nessuno» fra i trattamenti è già diventato «Solo antigraffio»: l'indurente c'è su ogni lente.)
+
+## Il Borgo Diottria da girare (dopo la mandata 2)
+
+Ray ha chiesto di mettere i due giri dentro il mondo, per provare l'incastro fra gioco e conoscenza. È il Borgo della mandata 4 in una prima forma: la grafica è quella vera, la storia è quella del prologo e dei dieci passi; mancano il rivale, il piano del Pressappoco e i tre segreti.
+
+- **Come si gioca:** sul telefono una console da Game Boy tenuto in verticale: lo schermo 160×144 a pixel netti, la croce (un tocco un passo, tenendo premuto si cammina), A per parlare, toccare e andare avanti, B per «Dopo», il menu (il prossimo passo, vassoio e Campionario, il percorso). Dal percorso ogni passo si rigioca.
+- **Il prologo:** fuori la strada è sfocata (la tua miopia). In bottega Iride chiede dei segni d'allarme e misura: −1,25. Si esce e il borgo è nitido. La notte il furto; il mattino il borgo è starato anche con gli occhiali giusti, e Iride dà le regole: la gradazione si misura o si legge, con un allarme prima il medico, e cos'è un allarme (dolore, lampi, la vista che cala d'un tratto).
+- **L'ordine, scelto perché ogni Diottro serva al cliente dopo:** Marco (miopia) → Bombo all'edicola: tornano i più nella cassetta di prova → Giulia (il più da vicino, il filtro per il computer) → la sera, Verdino nel vicolo: torna l'antiriflesso → Cello alla vetrina: calibro e ponte sull'asta → Davide (miopia forte: indice, calibro, antiriflesso) → il mattino, Polare al lago: tornano le polarizzate → Paolo (il sole sull'acqua) → Rullo alla merceria → Luisa (l'allarme) → l'attestato, e l'aggancio alla Valle delle Montature.
+- **Il mondo risponde:** dopo il caso il cliente ci vede e indica dove luccica il prossimo Diottro (e lo ripete finché serve); ogni Diottro ripreso toglie un passo di starato e dice cosa torna a funzionare; il tabellone si legge dopo Marco; la cassetta di prova, la vetrina e il Campionario dicono cosa manca.
+- **Le prove alla cieca del borgo** (una da imparare, una per romperlo) hanno portato: il prologo che esce in strada; i clienti che ripetono l'indicazione; Cello prima di Davide; il caso finito salvato già sulla schermata del risultato; i passi salvati; il finale che si prende anche entrando in bottega; il percorso chiuso prima del prologo; «Rifacciamo la prova?» che parte dal no; il giorno e la sera che cambiano sotto il velo nero; «Occhio esperto» che non vale più dopo aver visto la risposta.
+- **Da decidere con Ray:**
+  - Rullo, il cilindro, nel Borgo non serve a nessun cliente: è un aggancio ai mondi dopo. Si può aggiungere un cliente astigmatico (sfera e asse, come nel corso) o lasciarlo così.
+  - Nei casi senza un dubbio da mostrare la stella «Spiegazione» si prende chiedendo bene: forse va detto, o chiamata in un altro modo.
 
 ## Appendice A · La matrice: da dove si parte
 
@@ -528,6 +541,7 @@ Vanno in `docs/gioco/STANDARD.md`, `docs/gioco/STILE.md` e `docs/gioco/TECNICA.m
 
 ## Storia del documento
 
+- **0.7 · 7 ottobre 2026.** Il Borgo Diottria da girare, con i due giri dentro: motore, disegni, prologo, finale. Dopo due prove alla cieca nel borgo, l'ordine cambia (Cello prima di Davide) e il prologo esce in strada. Decisioni 7 e 8 di Ray (la misura dell'ottico basta; i trattamenti servono al cliente).
 - **0.6 · 7 ottobre 2026.** Uscita la mandata 2 (i due giri, in grezzo), dopo la prova alla cieca e la revisione di ottica. Regole in `docs/gioco/STANDARD.md`. Una domanda per Ray sulla legge (l'ipermetropia senza ricetta).
 - **0.5 · 7 ottobre 2026.** Approvato da Ray, con le sue decisioni: nomi liberi, scelta uomo o donna, tono, confine di legge, prova fatta da lui, prontuario del corso corretto.
 - **0.4 · 7 ottobre 2026.** Terza verifica dei due revisori: via le ultime contraddizioni.

@@ -49,8 +49,8 @@ Ogni testo che compare in un riquadro sta in **tre righe da 24 caratteri**, anda
 
 | Regola | Cosa controlla |
 |---|---|
-| G1 | I testi stanno nel riquadro (tre righe da 24); domande, nomi e spiegazioni delle prove nelle loro misure |
-| G2 | Il caso è ben fatto: 4–6 domande, almeno una chiave, ogni bisogno nascosto e la ricetta nascosta scoperti da una domanda, un dubbio con una sola dimostrazione che risponde; casi e riconoscimenti tutti nell'ordine |
+| G1 | I testi stanno nel riquadro (tre righe da 24); domande, nomi e spiegazioni delle prove nelle loro misure. Vale anche per i testi del mondo (dialoghi, cartelli, oggetti, porte chiuse); le scelte del mondo stanno in 20 caratteri |
+| G2 | Il caso è ben fatto: 4–6 domande, almeno una chiave, ogni bisogno nascosto e la ricetta nascosta scoperti da una domanda, un dubbio con una sola dimostrazione che risponde; casi e riconoscimenti tutti nell'ordine. Nel mondo: ogni passo dell'ordine si apre da qualcuno o da qualcosa, nessun evento apre un passo che non c'è, l'ancora di ogni mappa è una cella dove si cammina |
 | G3 | La lente solo da una misura: la prova lenti ha soluzione in ogni variante, e il Diottro che serve è nel vassoio a quel punto |
 | G4 | Il caso d'allarme non consegna lenti, e una domanda scopre l'allarme |
 | G5 | Ogni posto ha una scelta «Bene» col vassoio di quel momento |
@@ -62,7 +62,8 @@ Ogni testo che compare in un riquadro sta in **tre righe da 24 caratteri**, anda
 ## Come esce una mandata
 
 1. `npm run check`: 0 errori. Gli avvisi si leggono uno per uno.
-2. Prova alla cieca: un revisore che non ha visto il progetto gioca da riga di comando, `npx tsx scripts/diottri.ts <seme>`, con lo schermo scritto in testo e i tocchi da stdin. Ogni assunzione su qualcosa che non è sullo schermo è un difetto.
-3. Un revisore esperto di ottica legge casi, specie e prove.
-4. `npm run build && npm run test:e2e` (il dito vero su 390×844), poi push su `main` e l'anteprima `dist/diottri.html` come artifact.
-5. Ray gioca e dà il suo parere: è la prova che conta.
+2. Prova alla cieca: un revisore che non ha visto il progetto gioca da riga di comando, `npx tsx scripts/diottri.ts <seme>`, con lo schermo scritto in testo e i tocchi da stdin: nel borgo una mappa in caratteri e i tasti della console, al banco i bottoni numerati. Ogni assunzione su qualcosa che non è sullo schermo è un difetto. Un secondo revisore prova a romperlo: chiude a metà, rifiuta, preme tutto.
+3. Il robot (`src/diottri/mondo/robot.ts`) gioca tutto il mondo coi semi dei test: ogni passo si raggiunge, salvare e riprendere è uguale a continuare.
+4. Un revisore esperto di ottica legge casi, specie e prove.
+5. `npm run build && npm run test:e2e` (il dito vero su 390×844), poi push su `main` e l'anteprima `dist/diottri.html` come artifact.
+6. Ray gioca e dà il suo parere: è la prova che conta.

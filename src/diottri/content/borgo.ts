@@ -170,10 +170,12 @@ const PROLOGO_LENTI: Evento = [
 ];
 const PROLOGO_NOTTE: Evento = [
   { dice: "Che nitido! Adesso si legge anche l'insegna." },
+  { segna: "notte" },
   { buio: "Quella notte…" },
   { dice: "Gli uomini del Pressappoco rubano il Campionario Madre." },
   { dice: "Nella fuga si apre, e i Diottri scappano nel borgo." },
   { segna: "furto" },
+  { togli: "notte" },
   { buio: "Il mattino dopo." },
   { dice: "Strano: anche con gli occhiali il borgo è sfocato. Corri da Iride!" },
 ];
@@ -406,8 +408,8 @@ export function nebbia(ctx: Contesto): number {
   return DIOTTRI_DEL_BORGO.length - DIOTTRI_DEL_BORGO.filter(ctx.fatto).length;
 }
 
-/** Giorno o sera: la sera va da Giulia (la sera ho gli occhi stanchi) a Davide (di notte, che riflessi). */
-export const fase = (ctx: Contesto): "giorno" | "sera" => (ctx.fatto("c2") && !ctx.fatto("c3") ? "sera" : "giorno");
+/** Giorno o sera: la notte del furto, e la sera da Giulia (la sera ho gli occhi stanchi) a Davide (di notte, che riflessi). */
+export const fase = (ctx: Contesto): "giorno" | "sera" => ((ctx.segni.includes("notte") && !ctx.segni.includes("furto")) || (ctx.fatto("c2") && !ctx.fatto("c3")) ? "sera" : "giorno");
 
 /** Il prossimo passo, in una riga: per chi riprende dopo una pausa. */
 export function obiettivo(ctx: Contesto): string {

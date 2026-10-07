@@ -148,7 +148,7 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
         expect(F.S.caso.fine, p.id).not.toBeNull();
         expect(text()).toMatch(/Ci vedo!|Al medico/);
         expect(app().querySelectorAll(".overlay.fine .stella.on").length, p.id).toBe(3);
-        expect(text()).toContain("Tre stelle: occhio, spiegazione e soluzione.");
+        expect(text()).toContain("Tre stelle su tre: occhio, spiegazione e soluzione.");
         tap("[data-act=fineCaso]");
       } else {
         giocaRic(p.id);

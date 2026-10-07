@@ -143,7 +143,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
   /** Le stelle perse, e perché: una riga per momento. */
   function perse(st: CasoState) {
     const righe = MOMENTI.filter(m => !st.stelle[m] && st.perse[m]);
-    if (!righe.length) return `<p class="nota">Tre stelle: occhio, spiegazione e soluzione.</p>`;
+    if (!righe.length) return `<p class="nota">Tre stelle su tre: occhio, spiegazione e soluzione.</p>`;
     return `<ul class="perse">${righe.map(m => `<li><b>${MOMENTO_NOME[m]}</b>: ${esc(st.perse[m])}</li>`).join("")}</ul>`;
   }
 

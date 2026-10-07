@@ -42,6 +42,7 @@ La bottega di Iride è il cuore: facciata crema, tenda e insegna verde petrolio 
 - **Mattonella** (`mattonelle.ts`): `{ pal, px: 16 righe da 16 caratteri "0"–"3", anim?: [altri fotogrammi] }`.
 - **Oggetto** (`oggetti.ts`): `{ w, h, pal: nome o griglia h×w di nomi, px: h×16 righe da w×16 caratteri ("." trasparente, "0"–"3"), solido?: h righe da w caratteri ("x" pieno, "." si passa), sopra?: righe di celle disegnate sopra i personaggi, notte?: altri pixel per la sera }`.
 - **Figura** (`figure.ts`): `{ pal, giu: [fermo, passo], su: [fermo, passo], lato: [fermo, passo] }`, 16 righe da 16 caratteri ("." trasparente, "1"–"3"). `lato` guarda a **sinistra**: a destra lo specchia il programma. Il fotogramma «passo» ha una gamba avanti e il corpo un pixel più giù o più su.
+  - Di solito nella tavolozza di una figura 1 è la pelle, 2 la maglia, 3 i capelli e il contorno. **Luisa fa eccezione**: 1 sono i capelli bianchi, 2 la pelle, 3 il golfino viola e il contorno. Chi ritocca le sue righe deve tenerne conto.
 - **Luccichio**: tre fotogrammi 16×16 con la tavolozza `oro`.
 
 I disegni si scrivono come dati, a mano, riga per riga. Le funzioni che li generavano sono solo segnaposto.

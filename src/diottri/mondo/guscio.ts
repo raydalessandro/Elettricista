@@ -49,8 +49,10 @@ export function creaGuscio(c: Collegamenti) {
   let menuAperto = false;
   let attesa: ((t: Tasto | number) => void) | null = null; // chi aspetta un tasto (riquadro, scelta, buio)
   let scelta: { voci: string[]; i: number; annulla?: number } | null = null;
-  /** il giorno o la sera che si vede: cambia sotto il velo nero, non a metà di un dialogo */
+  /** il giorno o la sera, e lo starato, che si vedono: cambiano sotto il velo nero, non a metà di un dialogo */
   let faseVista = fase(ctx);
+  let nebbiaVista = nebbia(ctx);
+  const aggiornaVista = () => { faseVista = fase(ctx); nebbiaVista = nebbia(ctx); };
   let testoPieno = true;
   let typer = 0;
   let avviato = false;
@@ -93,9 +95,11 @@ export function creaGuscio(c: Collegamenti) {
     croce.addEventListener("pointerup", lascia);
     croce.addEventListener("pointercancel", lascia);
     croce.addEventListener("lostpointercapture", lascia);
+    // un tocco dà pointerdown e poi click: vale il primo; il click da solo (tastiera, lettori di schermo) vale lui
+    let tocco = 0;
     for (const b of el.querySelectorAll<HTMLButtonElement>("[data-tasto]")) {
-      b.addEventListener("pointerdown", e => { e.preventDefault(); premi(b.dataset.tasto as Tasto); });
-      b.addEventListener("click", e => { if ((e as MouseEvent).detail === 0) premi(b.dataset.tasto as Tasto); }); // tastiera e lettori di schermo
+      b.addEventListener("pointerdown", e => { e.preventDefault(); tocco = performance.now(); premi(b.dataset.tasto as Tasto); });
+      b.addEventListener("click", () => { if (performance.now() - tocco > 700) premi(b.dataset.tasto as Tasto); });
     }
     q(".gb-scelte")!.addEventListener("click", e => {
       const v = (e.target as HTMLElement).closest<HTMLElement>("[data-i]");
@@ -126,7 +130,7 @@ export function creaGuscio(c: Collegamenti) {
     if (!MAPPE[st.mappa]) Object.assign(st, structuredClone(INIZIO), { segni: st.segni });
     const [x, y] = posizioneLibera(mappa(), st.x, st.y, ctx);
     if (x !== st.x || y !== st.y) { st.x = x; st.y = y; mossa = null; c.salva(); }
-    faseVista = fase(ctx);
+    aggiornaVista();
   }
 
   function stacca() {
@@ -238,7 +242,7 @@ export function creaGuscio(c: Collegamenti) {
       occupato = false;
       versi = {};
       nascondi(".gb-riquadro");
-      faseVista = fase(ctx);
+      aggiornaVista();
       c.salva();
     }
   }
@@ -305,6 +309,7 @@ export function creaGuscio(c: Collegamenti) {
       nascondi(".gb-riquadro");
       c.salva();
       await c.ric(id);
+      nebbiaVista = nebbia(ctx); // il Diottro ripreso: il borgo si vede meglio subito
     },
     async vai(dest) { await vai(dest); },
     gira(d) { st.dir = d; },
@@ -312,7 +317,7 @@ export function creaGuscio(c: Collegamenti) {
       nascondi(".gb-riquadro");
       const v = q<HTMLElement>(".gb-velo");
       if (v) { v.hidden = false; v.textContent = genere(testo); v.classList.add("su"); }
-      faseVista = fase(ctx);
+      aggiornaVista();
       await new Promise<void>(res => {
         const t = window.setTimeout(() => { if (attesa) { attesa = null; res(); } }, 1800);
         attesa = () => { clearTimeout(t); res(); };
@@ -412,7 +417,7 @@ export function creaGuscio(c: Collegamenti) {
     g1.putImageData(new ImageData(f.sfondo.data, SCHERMO_W, SCHERMO_H), 0, 0);
     g2.clearRect(0, 0, SCHERMO_W, SCHERMO_H);
     g2.putImageData(new ImageData(f.primo.data, SCHERMO_W, SCHERMO_H), 0, 0);
-    const n = m.fuori ? nebbia(ctx) : 0;
+    const n = m.fuori ? nebbiaVista : 0;
     sf.style.filter = n ? `blur(${(n * 0.55).toFixed(2)}px) saturate(${1 - n * 0.06})` : "";
   }
 
@@ -435,8 +440,9 @@ export function creaGuscio(c: Collegamenti) {
     get indiceScelta() { return scelta ? scelta.i : -1; },
     get menu() { return menuAperto ? [...(q(".gb-menu")?.querySelectorAll<HTMLElement>("[data-voce]") ?? [])].map(v => ({ voce: v.dataset.voce!, testo: v.textContent ?? "", on: v.classList.contains("on") })) : null; },
     get velo() { const v = q<HTMLElement>(".gb-velo"); return v && !v.hidden ? (v.children.length ? [...v.children].map(x => x.textContent ?? "").join(" · ") : v.textContent ?? "") : ""; },
-    /** il giorno o la sera che si vede adesso */
+    /** il giorno o la sera, e lo starato, che si vedono adesso */
     get fase() { return faseVista; },
+    get nebbia() { return nebbiaVista; },
     stato: st,
     DELTA,
   };

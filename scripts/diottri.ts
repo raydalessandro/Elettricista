@@ -36,7 +36,7 @@ Math.random = () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (
 if (SALVA && existsSync(SALVA)) w.localStorage.setItem("diottri.v1", readFileSync(SALVA, "utf8"));
 
 const { mountDiottri } = await import("../src/diottri/ui");
-const { MAPPE, nebbia } = await import("../src/diottri/content/borgo");
+const { MAPPE } = await import("../src/diottri/content/borgo");
 const { cosePresenti, personaggiPresenti, portaA, timbriPresenti, voce } = await import("../src/diottri/mondo/motore");
 const { OGGETTI } = await import("../src/diottri/grafica/oggetti");
 const app = w.document.getElementById("app")!;
@@ -49,6 +49,7 @@ interface Guscio {
   scorri(d: string): void;
   scelta: string[] | null;
   fase: "giorno" | "sera";
+  nebbia: number;
   indiceScelta: number;
   riquadro: { chi: string; testo: string } | null;
   pieno: boolean;
@@ -139,7 +140,7 @@ function schermoMondo(): string {
   const m = MAPPE[st.mappa] ?? MAPPE.borgo;
   const ctx = { fatto: (id: string) => { const f = D().prog.fatti[id]; return !!f && (!!f.preso || !!f.stelle); }, segni: st.segni };
   const out: string[] = [];
-  const n = m.fuori ? nebbia(ctx) : 0;
+  const n = m.fuori ? g.nebbia : 0;
   out.push(`# ${m.nome} · ${m.fuori ? (g.fase === "sera" ? "è sera" : "è giorno") : "dentro"}${n ? ` · lo sfondo è sfocato (${n} su 5)` : ""}`);
   // gli oggetti: ogni cella piena sa di quale oggetto è
   const ogg = new Map<string, string>();

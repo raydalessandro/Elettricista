@@ -23,7 +23,8 @@ Piano in [`docs/ottica/CAPITOLI.md`](docs/ottica/CAPITOLI.md), regole degli eser
 
 Un gioco di ruolo in stile Game Boy Color, accanto al corso di ottica: per imparare l'ottica giocando, anche un'ora di fila. Su `/diottri`, collegato dalla home.
 
-- **Mandata 2** — i due giri del gioco, con la grafica provvisoria: cinque clienti al banco (chiedi, misura, costruisci l'occhiale, mostra, consegna; o il medico) e cinque Diottri da riconoscere con le prove vere del banco. I progressi restano sul dispositivo (`diottri.v1`).
+- **Mandata 2** — i due giri del gioco: cinque clienti al banco (chiedi, misura, costruisci l'occhiale, mostra, consegna; o il medico) e cinque Diottri da riconoscere con le prove vere del banco. I progressi restano sul dispositivo (`diottri.v1`).
+- **Il Borgo Diottria** — i due giri dentro un mondo da girare, come su un Game Boy Color tenuto in verticale: croce, A, B e menu sul telefono. Il prologo nella bottega di Iride, poi cinque clienti per il borgo e cinque Diottri che luccicano dove te li indicano. Il motore in `src/diottri/mondo/`, i disegni (a mano, come dati) in `src/diottri/grafica/`, la mappa e la storia in `src/diottri/content/borgo.ts`. Anteprime dei disegni: `npx tsx scripts/diottri-anteprima.ts mappa borgo`.
 
 Progetto in [`docs/gioco/PROGETTO.md`](docs/gioco/PROGETTO.md), regole in [`docs/gioco/STANDARD.md`](docs/gioco/STANDARD.md).
 
