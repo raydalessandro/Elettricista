@@ -199,3 +199,51 @@ body:has(.dio) { background: #0f2a26; }
 .dio .reset { align-items: center; padding: 12px 0; }
 
 .dio + #toast, #toast { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 50; background: #1f2b28; color: #f3ecd6; border-radius: 12px; padding: 10px 14px; max-width: 92vw; font: 600 14px var(--f-body); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+
+/* ====== IL MONDO: LA CONSOLE ======
+   Lo schermo 160×144 ingrandito a numeri interi (--k), pixel netti; sotto la croce, A e B, il menu.
+   Il riquadro dei dialoghi sta dentro lo schermo, in basso, come sul Game Boy. */
+.dio .gb { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: max(12px, env(safe-area-inset-top, 0px)) 12px calc(16px + env(safe-area-inset-bottom, 0px)); background: radial-gradient(120% 70% at 50% 0%, #1c3d37 0%, var(--bg) 70%); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.dio .gb-scocca { background: linear-gradient(180deg, #2a4a44, #1d3732); border-radius: 18px 18px 44px 18px; padding: 14px 14px 10px; box-shadow: inset 0 2px 0 rgba(255,255,255,.07), inset 0 -3px 0 rgba(0,0,0,.25), 0 10px 26px rgba(0,0,0,.4); }
+.dio .gb-vetro { background: #2b303b; border-radius: 10px 10px 26px 10px; padding: 12px; box-shadow: inset 0 0 0 2px #191c24, inset 0 6px 14px rgba(0,0,0,.35); }
+.dio .gb-schermo { --k: 2; position: relative; width: calc(160px * var(--k)); height: calc(144px * var(--k)); overflow: hidden; background: #0b1a17; border-radius: 2px; }
+.dio .gb-schermo canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+.dio .gb-sfondo { transition: filter .6s; }
+.dio .gb-marchio { margin: 9px 4px 0; font: 400 21px/1 var(--f-pixel); color: #9fd3c3; letter-spacing: .14em; }
+.dio .gb-marchio small { font-size: 13px; letter-spacing: .04em; color: #6fa597; margin-left: 6px; }
+
+.dio .gb-riquadro { position: absolute; left: calc(4px * var(--k)); right: calc(4px * var(--k)); bottom: calc(4px * var(--k)); min-height: calc(44px * var(--k)); background: #fbf7ea; color: #1f2b28; border: calc(2px * var(--k)) solid #1f2b28; border-radius: calc(3px * var(--k)); box-shadow: inset 0 0 0 calc(1px * var(--k)) #d8cfb5; padding: calc(3px * var(--k)) calc(6px * var(--k)) calc(4px * var(--k)); font: 400 calc(10.5px * var(--k))/1.12 var(--f-pixel); }
+.dio .gb-chi { display: block; color: #8a3c5c; font-weight: 400; }
+.dio .gb-testo { margin: 0; }
+.dio .gb-freccia { position: absolute; right: calc(5px * var(--k)); bottom: calc(1px * var(--k)); font-size: calc(7px * var(--k)); opacity: 0; }
+.dio .gb-riquadro.pieno .gb-freccia { opacity: 1; animation: gb-freccia .9s steps(2, jump-none) infinite; }
+@keyframes gb-freccia { 50% { transform: translateY(calc(1px * var(--k))); } }
+@media (prefers-reduced-motion: reduce) { .dio .gb-riquadro.pieno .gb-freccia { animation: none; } }
+.dio .gb-scelte { position: absolute; right: calc(4px * var(--k)); bottom: calc(50px * var(--k)); max-width: calc(120px * var(--k)); display: flex; flex-direction: column; background: #fbf7ea; border: calc(2px * var(--k)) solid #1f2b28; border-radius: calc(3px * var(--k)); padding: calc(2px * var(--k)); }
+.dio .gb-scelte button, .dio .gb-menu button { border: 0; background: transparent; color: #1f2b28; text-align: left; font: 400 calc(10px * var(--k))/1.2 var(--f-pixel); padding: calc(2px * var(--k)) calc(4px * var(--k)) calc(2px * var(--k)) calc(10px * var(--k)); position: relative; min-height: 32px; }
+.dio .gb-scelte button.on::before, .dio .gb-menu button.on::before { content: "▶"; position: absolute; left: calc(2px * var(--k)); font-size: calc(6px * var(--k)); top: 50%; transform: translateY(-50%); }
+.dio .gb-menu { position: absolute; top: calc(4px * var(--k)); right: calc(4px * var(--k)); display: flex; flex-direction: column; background: #fbf7ea; border: calc(2px * var(--k)) solid #1f2b28; border-radius: calc(3px * var(--k)); padding: calc(2px * var(--k)); }
+.dio .gb-velo { position: absolute; inset: 0; display: grid; place-content: center; gap: calc(4px * var(--k)); padding: calc(10px * var(--k)); text-align: center; background: #0b1a17; color: #f3ecd6; font: 400 calc(11px * var(--k))/1.2 var(--f-pixel); opacity: 0; transition: opacity .16s; }
+.dio .gb-velo.su { opacity: 1; }
+.dio .gb-velo.fine b { font-weight: 400; font-size: calc(16px * var(--k)); color: #f0c27a; }
+.dio .gb-velo.fine small { font-size: calc(8px * var(--k)); color: #9fd3c3; }
+.dio .gb-luogo { position: absolute; top: calc(4px * var(--k)); left: calc(4px * var(--k)); background: #fbf7ea; color: #1f2b28; border: calc(2px * var(--k)) solid #1f2b28; border-radius: calc(3px * var(--k)); padding: calc(1px * var(--k)) calc(5px * var(--k)); font: 400 calc(9px * var(--k))/1.2 var(--f-pixel); }
+
+.dio .gb-comandi { width: min(100%, 360px); display: grid; grid-template-columns: 1fr 1fr; align-items: center; row-gap: 14px; padding: 0 6px; }
+.dio .gb-croce { position: relative; width: 138px; height: 138px; touch-action: none; }
+.dio .gb-croce span { position: absolute; background: #1f2b28; box-shadow: 0 4px 0 #0b1513; }
+.dio .gb-croce .gb-su, .dio .gb-croce .gb-giu { left: 46px; width: 46px; height: 50px; }
+.dio .gb-croce .gb-su { top: 0; border-radius: 8px 8px 0 0; }
+.dio .gb-croce .gb-giu { bottom: 0; border-radius: 0 0 8px 8px; }
+.dio .gb-croce .gb-sinistra, .dio .gb-croce .gb-destra { top: 46px; width: 50px; height: 46px; }
+.dio .gb-croce .gb-sinistra { left: 0; border-radius: 8px 0 0 8px; }
+.dio .gb-croce .gb-destra { right: 0; border-radius: 0 8px 8px 0; }
+.dio .gb-croce i { position: absolute; left: 46px; top: 46px; width: 46px; height: 46px; background: #1f2b28; }
+.dio .gb-croce i::after { content: ""; position: absolute; inset: 14px; border-radius: 50%; background: #16211f; }
+.dio .gb-ab { justify-self: end; display: flex; align-items: flex-start; gap: 14px; transform: rotate(-24deg); margin-right: 4px; }
+.dio .gb-ab button { width: 64px; height: 64px; border-radius: 50%; border: 0; background: #8a3c5c; color: #f3ecd6; font: 400 24px/1 var(--f-pixel); box-shadow: 0 5px 0 #4f1f33, inset 0 2px 0 rgba(255,255,255,.18); touch-action: none; }
+.dio .gb-ab button:active { transform: translateY(3px); box-shadow: 0 2px 0 #4f1f33; }
+.dio .gb-ab .gb-b { margin-top: 30px; }
+.dio .gb-start { grid-column: 1 / -1; justify-self: center; }
+.dio .gb-start button { border: 0; border-radius: 99px; padding: 8px 22px; min-height: 36px; background: #3a4a45; color: #cfe3dc; font: 400 16px/1 var(--f-pixel); letter-spacing: .12em; box-shadow: 0 3px 0 #1d2724; transform: rotate(-24deg); }
+.dio .gb [hidden] { display: none !important; }
