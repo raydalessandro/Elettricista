@@ -1,0 +1,201 @@
+/* ====== DIOTTRI · STILE PROVVISORIO (mandata 2) ======
+   Un gioco ha il suo aspetto: colori fissi, uguali con il tema chiaro e scuro del telefono.
+   Tutto sta sotto .dio, con nomi di classe che il corso non usa (globals.css vale anche qui).
+   Carattere a pixel: Jersey 10 (OFL), scelto perché 5, 8 e C si leggono bene.
+   Lo stile vero (pixel, tavolozze del Game Boy Color) arriva nella mandata 3. */
+body:has(.dio) { background: #0f2a26; }
+.dio {
+  --bg: #0f2a26; --screen: #f3ecd6; --card: #fbf7ea; --ink: #1f2b28; --muted: #5d6b66; --line: #d8cfb5;
+  --teal: #2f7d6d; --teal-d: #215c50; --gold: #d9a441; --gold-d: #a8761c; --red: #b5473a; --green: #3f8a4f; --amber: #c07a1f;
+  --f-pixel: "Jersey 10", "Barlow Condensed", system-ui, sans-serif;
+  color-scheme: light;
+  min-height: 100dvh; background: var(--bg); color: var(--ink);
+  font: 400 16px/1.45 var(--f-body);
+}
+.dio * { box-sizing: border-box; }
+.dio button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.dio button:disabled { cursor: default; }
+.dio h1, .dio h2, .dio h3 { margin: 0; font-family: var(--f-pixel); font-weight: 400; letter-spacing: .01em; }
+.dio p { margin: 0; }
+
+.dio .schermo { max-width: 520px; margin: 0 auto; min-height: 100dvh; background: var(--screen); padding: 0 16px calc(140px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; }
+.dio .logo { font-family: var(--f-pixel); font-weight: 400; font-size: 46px; color: var(--teal-d); line-height: 1; }
+.dio .sotto { color: var(--muted); font-size: 14px; }
+.dio .nota { color: var(--muted); font-size: 13.5px; }
+.dio .centro { text-align: center; }
+
+/* bottoni */
+.dio .btn { border: 0; border-radius: 12px; padding: 12px 18px; font-family: var(--f-pixel); font-size: 23px; background: var(--teal); color: #fff; box-shadow: 0 3px 0 var(--teal-d); }
+.dio .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--teal-d); }
+.dio .btn.sec { background: var(--card); color: var(--ink); box-shadow: 0 3px 0 var(--line); border: 1px solid var(--line); }
+.dio .btn.pericolo { background: var(--red); box-shadow: 0 3px 0 #7d2c23; }
+.dio .btn.primaria, .dio .azioni .primaria { background: var(--gold); color: var(--ink); box-shadow: 0 3px 0 var(--gold-d); }
+.dio .btn:disabled { opacity: .45; }
+.dio .ib { border: 0; background: transparent; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; color: var(--ink); }
+
+/* scelta del personaggio */
+.dio .inizio { justify-content: center; align-items: center; text-align: center; padding-top: 40px; }
+.dio .inizio .dom { font-family: var(--f-pixel); font-size: 27px; margin-top: 12px; }
+.dio .due { display: flex; gap: 16px; justify-content: center; }
+.dio .scelta-chi { border: 2px solid var(--line); background: var(--card); border-radius: 16px; padding: 12px 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; font-family: var(--f-pixel); font-size: 23px; }
+.dio .scelta-chi:active { border-color: var(--teal); }
+
+/* home */
+.dio .hhead { display: flex; align-items: center; gap: 12px; padding-top: 16px; }
+.dio .hhead > div { flex: 1; }
+.dio .hhead svg { border-radius: 12px; flex: none; }
+.dio .iride { display: flex; gap: 10px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.dio .iride svg { flex: none; border-radius: 12px; }
+.dio .iride p + p { margin-top: 6px; }
+.dio .iride .btn { margin-top: 10px; }
+.dio .percorso { display: flex; flex-direction: column; gap: 8px; }
+.dio .passo { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 10px 12px; min-height: 64px; }
+.dio .passo svg { flex: none; border-radius: 10px; }
+.dio .passo .t { flex: 1; display: flex; flex-direction: column; font-family: var(--f-pixel); font-size: 22px; line-height: 1.1; min-width: 0; }
+.dio .passo .t small { font-family: var(--f-body); font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.dio .passo .t em { font-family: var(--f-body); font-style: normal; font-size: 13.5px; color: var(--muted); }
+.dio .passo.ric { background: #f6f1df; }
+.dio .passo.chiuso { opacity: .5; }
+.dio .luccica { width: 44px; height: 44px; border-radius: 10px; background: var(--ink); display: grid; place-items: center; flex: none; }
+.dio .preso { font: 600 12px var(--f-body); background: var(--teal); color: #fff; border-radius: 99px; padding: 3px 9px; }
+.dio .stelle { display: inline-flex; gap: 2px; flex: none; }
+.dio .stelle .stella { display: inline-flex; flex-direction: column; align-items: center; }
+.dio .stelle small { font-size: 11px; color: var(--muted); }
+.dio .piede { display: flex; justify-content: center; margin-top: 4px; }
+
+/* barra in alto */
+.dio .dbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 6px; background: var(--screen); margin: 0 -16px; padding: 8px 12px 8px 6px; border-bottom: 1px solid var(--line); }
+.dio .dbar h1 { flex: 1; font-size: 23px; line-height: 1.05; min-width: 0; }
+.dio .fiducia, .dio .diff { display: inline-flex; align-items: center; gap: 2px; }
+.dio .fiducia .lbl, .dio .diff .lbl { font: 600 11px var(--f-body); color: var(--muted); margin-right: 4px; }
+.dio .fiducia i, .dio .diff i { width: 7px; height: 14px; border-radius: 2px; background: var(--line); display: inline-block; }
+.dio .fiducia i.ok { background: var(--green); } .dio .fiducia i.warn { background: var(--amber); } .dio .fiducia i.bad { background: var(--red); }
+.dio .diff i.on { background: var(--red); }
+
+/* il caso */
+.dio .cliente { display: flex; gap: 12px; align-items: center; }
+.dio .cliente svg { flex: none; border-radius: 12px; }
+.dio .cliente .nome { font-family: var(--f-pixel); font-size: 22px; line-height: 1.1; }
+.dio .cliente .indizio { color: var(--muted); font-size: 14.5px; font-style: italic; }
+.dio .scena { margin: 0; }
+.dio .scena svg.scene { display: block; width: 100%; height: auto; border-radius: 10px; border: 3px solid var(--ink); }
+.dio .scena figcaption { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.dio .bisogni h2, .dio .occhiale h2, .dio .prove h2 { font-size: 19px; color: var(--muted); margin-bottom: 6px; }
+.dio .bisogni ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.dio .bisogni li { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 7px 9px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 6px; }
+.dio .bisogni li small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; line-height: 1.25; }
+.dio .bisogni li .n { font-weight: 600; font-size: 14.5px; }
+.dio .bisogni li.ok { border-color: var(--green); background: #eef5e8; }
+.dio .bisogni li.vietato { border-color: var(--red); background: #f9e4e0; }
+.dio .bisogni .g { font: 600 12px var(--f-body); }
+.dio .tacche { display: inline-flex; gap: 3px; }
+.dio .tacche i { width: 12px; height: 12px; border-radius: 3px; background: var(--line); display: inline-block; }
+.dio .tacche i.on { background: var(--red); }
+.dio .posti { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.dio .posto { text-align: left; border: 2px dashed var(--line); background: var(--card); border-radius: 10px; padding: 7px 9px; font-weight: 600; font-size: 14.5px; line-height: 1.25; }
+.dio .posto small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.dio .riquadro { background: var(--ink); color: var(--screen); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; border: 3px solid #0b1a17; box-shadow: inset 0 0 0 2px #3a4a45; }
+.dio .riquadro .m { font-size: 15px; line-height: 1.35; }
+.dio .riquadro .m b { color: var(--gold); font-weight: 600; }
+.dio .riquadro .m.da-tu b { color: #9fd3c3; }
+.dio .riquadro .m.da-iride b { color: #f0b9a8; }
+.dio .riquadro .m.da-gioco { font-style: italic; color: #cfd8c9; }
+.dio .consiglio { display: flex; align-items: center; gap: 8px; background: #fff8e2; border: 1px solid var(--gold); border-radius: 12px; padding: 6px 10px; font-size: 15px; }
+.dio .consiglio svg { flex: none; border-radius: 8px; }
+.dio .esito { display: inline-block; font: 700 11px var(--f-body); letter-spacing: .04em; text-transform: uppercase; border-radius: 99px; padding: 1px 7px; margin-right: 6px; vertical-align: 1px; }
+.dio .esito.bene { background: var(--green); color: #fff; }
+.dio .esito.ok { background: var(--amber); color: #fff; }
+.dio .esito.no { background: var(--red); color: #fff; }
+.dio .esito.grave { background: #fff; color: var(--red); outline: 2px solid var(--red); }
+.dio .mostravis svg, .dio .risultato svg { display: block; width: 100%; height: auto; max-height: 240px; }
+.dio .confronto { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+/* azioni in basso */
+.dio .azioni { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 520px; margin: 0 auto; padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--bg); }
+.dio .azioni.una { grid-template-columns: 1fr; }
+.dio .azioni button { border: 0; border-radius: 12px; min-height: 44px; font-family: var(--f-pixel); font-size: 22px; background: var(--screen); color: var(--ink); box-shadow: 0 3px 0 #0b1a17; }
+.dio .azioni button:disabled { opacity: .4; }
+.dio .azioni button.accendi { background: var(--gold); animation: dio-pulse 1.4s ease-in-out infinite; }
+@keyframes dio-pulse { 50% { box-shadow: 0 3px 0 #0b1a17, 0 0 0 4px rgba(217, 164, 65, .45); } }
+@media (prefers-reduced-motion: reduce) { .dio .azioni button.accendi { animation: none; } }
+
+/* fogli e finestre */
+.dio .velo { position: fixed; inset: 0; z-index: 30; background: rgba(8, 20, 18, .45); }
+.dio .velo.pieno { background: rgba(8, 20, 18, .7); }
+.dio .foglio, .dio .overlay { position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; max-width: 520px; margin: 0 auto; background: var(--screen); border-radius: 18px 18px 0 0; padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)); max-height: 88dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.dio .overlay { top: max(12px, env(safe-area-inset-top, 0px)); border-radius: 18px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); left: 8px; right: 8px; max-height: none; }
+.dio .foglio header, .dio .overlay header { display: flex; align-items: center; justify-content: space-between; }
+.dio .foglio h2, .dio .overlay h2 { font-size: 26px; }
+.dio .foglio h3 { font-size: 20px; margin-top: 6px; }
+.dio .lista { display: flex; flex-direction: column; gap: 6px; }
+.dio .opz { text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-height: 48px; justify-content: center; }
+.dio .opz b { font-weight: 600; font-size: 16px; }
+.dio .opz small { color: var(--muted); font-size: 13px; }
+.dio .opz small.se { color: var(--ink); font-size: 12.5px; }
+.dio .perse { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 14px; display: flex; flex-direction: column; gap: 2px; }
+.dio .perse li::before { content: "☆ "; color: var(--gold-d); }
+.dio .opz:disabled { opacity: .6; }
+.dio .opz.cur { border-color: var(--teal); background: #e5f1ec; opacity: 1; }
+.dio .dubbio { font-family: var(--f-pixel); font-size: 22px; }
+.dio .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.dio .chip { border: 1px solid var(--line); background: var(--card); border-radius: 99px; padding: 8px 16px; font-weight: 600; min-height: 40px; }
+.dio .chip.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+/* prova lenti */
+.dio .occhi { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.dio .tab { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px; font-weight: 600; }
+.dio .tab.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+.dio .coperto { color: var(--muted); font-size: 13px; text-align: center; }
+.dio .valore { display: flex; align-items: baseline; justify-content: center; gap: 10px; }
+.dio .valore b { font-family: var(--f-pixel); font-weight: 400; font-size: 52px; line-height: 1; }
+.dio .valore small { color: var(--muted); }
+.dio .passi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.dio .passi button { border: 0; border-radius: 12px; min-height: 48px; background: var(--card); box-shadow: 0 3px 0 var(--line); font: 400 23px var(--f-pixel); }
+.dio .passi button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+
+/* ricetta */
+.dio .cerca { font-size: 16px; }
+.dio .rxtab { width: 100%; border-collapse: separate; border-spacing: 4px; }
+.dio .rxtab th { font-family: var(--f-pixel); font-weight: 400; font-size: 20px; color: var(--muted); }
+.dio .rx { width: 100%; min-height: 48px; border: 1px solid var(--line); background: #fff; border-radius: 8px; font-family: var(--f-mono); font-weight: 600; font-size: 16px; }
+
+/* fine */
+.dio .overlay.fine { align-items: center; text-align: center; justify-content: center; }
+.dio .overlay h2.logo { font-size: 46px; }
+.dio .overlay.fine .stelle svg { width: 40px; height: 40px; }
+.dio .overlay.fine .riquadro { text-align: left; width: 100%; }
+.dio .badge { background: var(--gold); border-radius: 99px; padding: 4px 12px; font-weight: 600; }
+
+/* riconoscimento */
+.dio .dove { display: flex; align-items: center; gap: 6px; font-family: var(--f-pixel); font-size: 21px; padding-top: 4px; }
+.dio .creatura { display: grid; place-items: center; padding: 6px 0; }
+.dio .creatura svg { animation: dio-respira 2.4s ease-in-out infinite; }
+@keyframes dio-respira { 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .dio .creatura svg { animation: none; } }
+.dio .intro { background: #fff8e2; }
+.dio .risultato { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+.dio .risultato figcaption { font-weight: 600; margin-top: 4px; }
+.dio .griglia { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.dio .pr { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 10px 8px; min-height: 48px; font-weight: 600; font-size: 14.5px; }
+.dio .pr.fatta { background: #e5f1ec; border-color: var(--teal); }
+.dio .pr.ultima { outline: 2px solid var(--gold); }
+
+/* vassoio e Campionario */
+.dio .vassoio section { display: flex; flex-direction: column; gap: 8px; }
+.dio .vassoio section > h2 { font-size: 25px; margin-top: 6px; }
+.dio .scheda { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; text-align: left; width: 100%; }
+.dio .scheda header { display: flex; align-items: center; gap: 10px; }
+.dio .scheda h3 { font-size: 27px; }
+.dio .scheda header small { color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-size: 12px; }
+.dio .scheda dl { margin: 8px 0 0; display: grid; gap: 2px; }
+.dio .scheda dt { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-top: 6px; }
+.dio .scheda dd { margin: 0; }
+.dio .scheda svg.profilo { width: 100%; height: auto; margin-top: 6px; }
+.dio .lessico { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
+.dio .campionario { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.dio .cs { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px; }
+.dio .cs.ignoto svg { filter: brightness(0) opacity(.35); }
+.dio .registro { margin: 0; padding-left: 18px; font-size: 14px; }
+.dio .reset { align-items: center; padding: 12px 0; }
+
+.dio + #toast, #toast { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 50; background: #1f2b28; color: #f3ecd6; border-radius: 12px; padding: 10px 14px; max-width: 92vw; font: 600 14px var(--f-body); box-shadow: 0 6px 20px rgba(0,0,0,.3); }

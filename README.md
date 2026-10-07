@@ -19,9 +19,13 @@ Il mestiere dell'ottico a 360 gradi, per chi sa già vendere: il corso non inseg
 
 Piano in [`docs/ottica/CAPITOLI.md`](docs/ottica/CAPITOLI.md), regole degli esercizi in [`docs/ottica/STANDARD.md`](docs/ottica/STANDARD.md).
 
-## Diottri · in progettazione
+## Diottri · il gioco (in prova)
 
-Un gioco di ruolo in stile Game Boy Color, accanto al corso di ottica: per imparare l'ottica giocando, anche un'ora di fila. Progetto in [`docs/gioco/PROGETTO.md`](docs/gioco/PROGETTO.md).
+Un gioco di ruolo in stile Game Boy Color, accanto al corso di ottica: per imparare l'ottica giocando, anche un'ora di fila. Su `/diottri`, collegato dalla home.
+
+- **Mandata 2** — i due giri del gioco, con la grafica provvisoria: cinque clienti al banco (chiedi, misura, costruisci l'occhiale, mostra, consegna; o il medico) e cinque Diottri da riconoscere con le prove vere del banco. I progressi restano sul dispositivo (`diottri.v1`).
+
+Progetto in [`docs/gioco/PROGETTO.md`](docs/gioco/PROGETTO.md), regole in [`docs/gioco/STANDARD.md`](docs/gioco/STANDARD.md).
 
 ## Pubblicare
 
@@ -51,6 +55,6 @@ La prima volta, per le prove col dito: `npx playwright install chromium`.
 | `src/ottica/` | Ottica: modello dell'occhio (`core/eye.ts`), prova lenti e varianti, dialoghi, disegni, contenuti, controllo (O1–O10), interfaccia |
 | `src/app/`, `src/components/` | Le pagine Next.js: la home, `/elettricista`, `/ottica` |
 | `tests/` | Test unitari (Vitest) e prove col dito (Playwright) |
-| `scripts/` | Controllo dello standard, versioni in un file solo, pacchetti e giochi da riga di comando per la prova alla cieca (`banco.ts`, `negozio.ts`) |
+| `scripts/` | Controllo dello standard, versioni in un file solo, pacchetti e giochi da riga di comando per la prova alla cieca (`banco.ts`, `negozio.ts`, `diottri.ts`) |
 
 Sono simulatori didattici. Nell'impianto vero si lavora fuori tensione, accanto a chi ne ha la responsabilità. In negozio si impara a fare tutto tranne la visita medica: quando serve, si manda dall'oculista.

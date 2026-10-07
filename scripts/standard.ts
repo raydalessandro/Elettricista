@@ -3,6 +3,8 @@ import { CARDS, LEVELS } from "../src/content";
 import { CARDS as CARDS_O, LEVELS as LEVELS_O } from "../src/ottica/content";
 import { validateOttica } from "../src/ottica/standard/validate";
 import { validate } from "../src/standard/validate";
+import { CASI, RICONOSCIMENTI } from "../src/diottri/content";
+import { validateDiottri } from "../src/diottri/standard/validate";
 
 type F = { lv: string; code: string; sev: "errore" | "avviso"; msg: string };
 let errors = 0;
@@ -20,4 +22,5 @@ function report(title: string, out: F[], n: number) {
 }
 report("Fase Neutro Terra (docs/STANDARD.md)", validate(LEVELS, CARDS), LEVELS.length);
 report("Sfera Cilindro Asse (docs/ottica/STANDARD.md)", validateOttica(LEVELS_O, CARDS_O), LEVELS_O.length);
+report("Diottri (docs/gioco/STANDARD.md)", validateDiottri(), CASI.length + RICONOSCIMENTI.length);
 process.exit(errors ? 1 : 0);

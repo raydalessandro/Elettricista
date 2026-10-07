@@ -1,6 +1,6 @@
 # Diottri · progetto del gioco
 
-Versione 0.5 · 7 ottobre 2026 · approvato da Ray; mandata 2 in corso
+Versione 0.6 · 7 ottobre 2026 · approvato da Ray; mandata 2 uscita, da giocare
 
 Un gioco di ruolo con le creature, in stile Game Boy Color, dove tutto è ottica. Sta accanto al corso «Sfera Cilindro Asse»: il corso è il prontuario da tasca, il gioco è la ripetizione che si fa per divertimento, la sera, anche per un'ora di fila. Si finisce in circa otto ore, e dopo la fine la bottega resta aperta.
 
@@ -364,6 +364,25 @@ Ogni mandata finisce come un capitolo del corso: controllo automatico, revisione
 5. **La prova della mandata 2** la fa Ray, giocando.
 6. **Il prontuario del corso** è corretto: allarme «subito» separato da «oggi stesso», e i bambini in una tabella della visita senza urgenza.
 
+**Da chiedere a Ray.** Il revisore di ottica della mandata 2 ricorda l'art. 12 del R.D. 1334/1928: alla lettera, gli ottici vendono senza prescrizione medica solo le lenti per miopia e presbiopia; ipermetropia, astigmatismo e afachia vogliono la ricetta. Il caso 2 (Giulia, ipermetrope di 28 anni) oggi misura e consegna un +2,00 senza ricetta. Se va cambiato, la strada più leggera: la misura resta, e il caso si chiude consigliando la visita per la ricetta («Torna con la ricetta»), come il bambino. Vale anche per i cilindri dei mondi dopo.
+
+## La mandata 2, com'è uscita
+
+- **Dove:** `/diottri`, collegato dalla home; anteprima `dist/diottri.html`. Cinque casi e cinque riconoscimenti, in fila: c1, r1, c2, r2, c3, r3, c4, r4, r5, c5.
+- **Grafica provvisoria:** carattere a pixel Jersey 10 (5, 8 e C si leggono bene; Pixelify Sans no), creature semplici, scene del corso.
+- **Dopo la prova alla cieca e la revisione di ottica:**
+  - le due regole si dicono all'inizio: la gradazione si misura (o si legge sulla ricetta); con un allarme niente misure, prima il medico. La finestra del medico dice quando si sceglie «subito», «oggi» o la visita;
+  - il caso d'allarme ha lo schermo di un caso normale: scena, bisogni, occhiale. Leggere gli occhiali o la ricetta è «Non così»; la prova lenti è «Errore grave»;
+  - a fine caso si legge perché una stella è persa; il primo caso e il primo riconoscimento hanno una riga della Maestra che dice la mossa dopo;
+  - la neutralizzazione dice la scala della forza (piano debole, svelta media, corre forte);
+  - testi corretti: nessuna promessa sulla stanchezza (il più «fa lavorare meno l'occhio»), il menisco, la polarizzata che «riduce» il riflesso, il caldo sull'acetato, il cilindro fuori asse, la categoria 4 dal 3 all'8%; «Bruno, categoria 2» al lago diventa «Non così».
+- **Idee della revisione per le prossime mandate:**
+  - neutralizzare davvero: dopo «con o contro», la lente di segno opposto dalla cassetta finché la croce sta ferma; la fascia si legge dal numero;
+  - al lago, l'aggiuntivo da sole polarizzato che si alza in galleria;
+  - con un allarme, la domanda «Altri disturbi nuovi?»: se sì, il 112;
+  - anche con la ricetta, le lenti nell'occhiale di prova e i 10/10 prima di ordinare;
+  - una montatura coi centri vicini alla distanza pupillare (48□18) per vedere il decentramento; «Solo indurente» al posto di «Nessuno»; l'anima di metallo nell'asta dell'acetato.
+
 ## Appendice A · La matrice: da dove si parte
 
 Ogni voce ha i suoi esiti, con la scala del corso. I valori si scrivono insieme ai capitoli e passano dalla revisione di un esperto; nello standard ogni voce sarà segnata giudicata o da Campionario.
@@ -508,6 +527,7 @@ Vanno in `docs/gioco/STANDARD.md`, `docs/gioco/STILE.md` e `docs/gioco/TECNICA.m
 
 ## Storia del documento
 
+- **0.6 · 7 ottobre 2026.** Uscita la mandata 2 (i due giri, in grezzo), dopo la prova alla cieca e la revisione di ottica. Regole in `docs/gioco/STANDARD.md`. Una domanda per Ray sulla legge (l'ipermetropia senza ricetta).
 - **0.5 · 7 ottobre 2026.** Approvato da Ray, con le sue decisioni: nomi liberi, scelta uomo o donna, tono, confine di legge, prova fatta da lui, prontuario del corso corretto.
 - **0.4 · 7 ottobre 2026.** Terza verifica dei due revisori: via le ultime contraddizioni.
   - Il bambino senza ricetta non si misura; la vista doppia ha tre strade; col prodotto chimico l'acqua corrente non è mai un errore; con le lenti a contatto niente acqua, nemmeno con gli occhialini.

@@ -26,6 +26,15 @@ const COURSES = [
     desc: "Il mestiere dell'ottico, per chi sa già vendere: come vede l'occhio, cosa correggono le lenti, e i casi al banco.",
     appClass: "ott",
   },
+  {
+    out: "diottri.html",
+    entry: "src/diottri/standalone.ts",
+    css: ["src/app/globals.css", "src/app/diottri.css"],
+    title: "Diottri",
+    desc: "Il mestiere dell'ottico, giocando: clienti al banco e Diottri da riconoscere. Prova dei due giri, grafica provvisoria.",
+    appClass: "dio",
+    fonts: "https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Jersey+10&display=swap",
+  },
 ];
 
 for (const c of COURSES) {
@@ -40,10 +49,11 @@ for (const c of COURSES) {
   });
   const css = c.css.map(f => readFileSync(join(root, f), "utf8")).join("\n");
   const html = `<title>${c.title}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="${c.desc}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="${fonts}">
+<link rel="stylesheet" href="${"fonts" in c && c.fonts ? c.fonts : fonts}">
 <style>
 ${css}</style>
 <div id="app"${c.appClass ? ` class="${c.appClass}"` : ""}></div>

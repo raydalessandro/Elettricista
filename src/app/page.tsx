@@ -73,6 +73,25 @@ export default function Home() {
           </a>
         ))}
       </nav>
+      <nav className="giochi" aria-label="Giochi">
+        <a className="gioco" href="/diottri">
+          <span className="course-art">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <rect x="4" y="4" width="56" height="56" rx="12" fill="#0f2a26" />
+              <circle cx="32" cy="33" r="17" fill="#d7eef6" stroke="#e08a2e" strokeWidth="4" />
+              <path d="M24 22 Q30 18 36 20" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".8" />
+              <circle cx="27" cy="34" r="2.6" fill="#1f2b28" />
+              <circle cx="37" cy="34" r="2.6" fill="#1f2b28" />
+              <path d="M28 40 Q32 43 36 40" fill="none" stroke="#1f2b28" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className="course-t">
+            <small className="eyebrow">Il gioco dell&apos;ottica · prova</small>
+            <b>Diottri</b>
+            <span className="muted">Clienti al banco e Diottri da riconoscere: l&apos;ottica, giocando. Grafica provvisoria.</span>
+          </span>
+        </a>
+      </nav>
       <p className="fine">I progressi restano su questo dispositivo, corso per corso.</p>
     </main>
   );
