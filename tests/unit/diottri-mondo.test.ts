@@ -63,13 +63,14 @@ describe("Diottri · il motore della mappa", () => {
   it("il prologo: la misura in bottega, la strada nitida e il furto fuori, il mattino di nuovo in bottega", () => {
     const entrando = (mappa: string, segni: string[]) => JSON.stringify(eventoArrivo(MAPPE[mappa], contesto([], segni)));
     expect(entrando("bottega", ["inizio"])).toContain("Buongiorno");
-    expect(entrando("bottega", ["inizio"])).toContain("Esca a guardare la strada");
+    expect(entrando("bottega", ["inizio"])).toContain("Esci a guardare la strada");
     expect(nebbia(contesto([], ["inizio", "misurato"]))).toBe(0); // con gli occhiali nuovi, la strada nitida
     expect(entrando("borgo", ["inizio", "misurato"])).toContain("Quella notte");
     expect(entrando("bottega", ["inizio", "misurato"])).toBe("null"); // in bottega non succede niente: si esce
-    expect(entrando("bottega", ["inizio", "misurato", "furto"])).toContain("Diamoci del tu");
+    expect(entrando("bottega", ["inizio", "misurato", "furto"])).toContain("Da oggi lavori con me");
     expect(entrando("bottega", ["inizio", "misurato", "furto"])).toContain('"segna":"prologo"');
-    expect(entrando("borgo", ["inizio", "misurato", "furto"])).toBe("null");
+    expect(entrando("borgo", ["inizio", "misurato", "furto"])).toContain("Il mattino dopo"); // chiuso nel mezzo: il mattino si ridice
+    expect(entrando("borgo", ["inizio", "misurato", "furto", "alba"])).toBe("null");
     expect(eventoArrivo(MAPPE.bottega, contesto([], DOPO_PROLOGO))).toBeNull();
   });
 
@@ -109,7 +110,23 @@ describe("Diottri · il motore della mappa", () => {
   it("dal centro della piazza si arriva a ogni zona del borgo", () => {
     const ctx = contesto([], DOPO_PROLOGO);
     const s: StatoMondo = { mappa: "borgo", x: 14, y: 10, dir: "giu", segni: ctx.segni };
-    for (const [x, y] of [[10, 3], [22, 7], [6, 18], [4, 23], [26, 19], [22, 23], [3, 14]]) expect(strada(MAPPE.borgo, s, x, y, ctx), `${x},${y}`).not.toBeNull();
+    for (const [x, y] of [[10, 3], [22, 7], [6, 18], [4, 23], [24, 18], [22, 23], [3, 14], [26, 8]]) expect(strada(MAPPE.borgo, s, x, y, ctx), `${x},${y}`).not.toBeNull();
+  });
+
+  it("l'isolotto del lago: a piedi no, in canoa sì", () => {
+    const s: StatoMondo = { mappa: "borgo", x: 22, y: 19, dir: "giu", segni: DOPO_PROLOGO };
+    expect(strada(MAPPE.borgo, s, 26, 21, contesto([], DOPO_PROLOGO))).toBeNull();
+    const conCanoa = contesto([], [...DOPO_PROLOGO, "ha:canoa"]);
+    expect(strada(MAPPE.borgo, s, 26, 21, conCanoa)).not.toBeNull();
+    expect(solidoA(MAPPE.borgo, 23, 21, conCanoa)).toBe(false); // l'acqua, in canoa
+    expect(solidoA(MAPPE.borgo, 18, 22, conCanoa)).toBe(true); // le canne no
+  });
+
+  it("la strada per la Valle: senza bici, senza attestato, poi i lavori in corso", () => {
+    const giu = (segni: string[]) => { const s: StatoMondo = { mappa: "borgo", x: 14, y: 24, dir: "giu", segni }; const p = passo(MAPPE.borgo, s, "giu", contesto([], segni)); return p.esito === "chiusa" ? JSON.stringify(p.evento) : p.esito; };
+    expect(giu(DOPO_PROLOGO)).toContain("ci vuole la bici");
+    expect(giu([...DOPO_PROLOGO, "ha:bici"])).toContain("Prima l'attestato");
+    expect(giu([...DOPO_PROLOGO, "ha:bici", "attestato"])).toContain("lavori in corso");
   });
 });
 
@@ -123,6 +140,10 @@ describe("Diottri · il robot gioca tutto il Borgo", () => {
     expect(nebbia(ctx)).toBe(0);
     expect(fase(ctx)).toBe("giorno");
     expect(r.testi.some(t => t.includes("Valle delle Montature"))).toBe(true);
+    // per l'isolotto ha venduto abbastanza occhiali da comprare la canoa
+    expect(r.partita.stato.segni).toContain("ha:canoa");
+    expect(r.testi.some(t => t.includes("Ecco la canoa"))).toBe(true);
+    expect(r.partita.soldi).toBeGreaterThanOrEqual(0);
   });
 
   it("salvare e ricaricare è uguale a continuare", async () => {

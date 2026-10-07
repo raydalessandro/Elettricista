@@ -49,9 +49,12 @@ export function celleOggetti(m: MappaDef, ctx: Contesto): Set<string> {
   return out;
 }
 
+/** Una mattonella si attraversa? Le solide no, a meno di avere quello che serve (l'acqua con la canoa). */
+export const percorribile = (v: { solido?: boolean; serve?: string } | null, ctx: Contesto) => !!v && (!v.solido || (!!v.serve && ctx.segni.includes(v.serve)));
+
 export function solidoA(m: MappaDef, x: number, y: number, ctx: Contesto, oggetti = celleOggetti(m, ctx)): boolean {
   const v = voce(m, x, y);
-  if (!v || v.solido) return true;
+  if (!percorribile(v, ctx)) return true;
   if (oggetti.has(`${x},${y}`)) return true;
   if (personaggiPresenti(m, ctx).some(p => p.x === x && p.y === y)) return true;
   if (cosePresenti(m, ctx).some(c => c.solido && c.x === x && c.y === y)) return true;
@@ -59,6 +62,9 @@ export function solidoA(m: MappaDef, x: number, y: number, ctx: Contesto, oggett
 }
 
 export const portaA = (m: MappaDef, x: number, y: number): Porta | undefined => m.porte.find(p => p.x === x && p.y === y);
+
+/** Cosa dice una porta chiusa: la prima ragione che vale, o il suo cartello. */
+export const perchePorta = (p: Porta, ctx: Contesto): Evento => (p.perche ? battuta(p.perche, ctx) : null) ?? [{ dice: p.chiusa ?? "È chiuso." }];
 
 export function davanti(s: StatoMondo): [number, number] {
   const [dx, dy] = DELTA[s.dir];
@@ -89,7 +95,7 @@ export function chiDavanti(m: MappaDef, s: StatoMondo, ctx: Contesto): Davanti {
   if (c) return { tipo: "cosa", c };
   // una porta chiusa dice perché, anche col tasto A
   const porta = portaA(m, x, y);
-  if (porta && !vale(porta.se, ctx)) return { tipo: "cosa", c: { id: `porta-${x}-${y}`, tipo: "oggetto", x, y, tocca: [{ fai: [{ dice: porta.chiusa ?? "È chiuso." }] }] } };
+  if (porta && !vale(porta.se, ctx)) return { tipo: "cosa", c: { id: `porta-${x}-${y}`, tipo: "oggetto", x, y, tocca: [{ fai: perchePorta(porta, ctx) }] } };
   // un oggetto che ha qualcosa da dire, da qualunque sua cella
   const t = timbriPresenti(m, ctx).find(q => {
     const o = OGGETTI[q.ogg];
@@ -116,7 +122,7 @@ export type Passo =
   | { esito: "mosso" }
   | { esito: "bloccato" }
   | { esito: "porta"; porta: Porta }
-  | { esito: "chiusa"; testo: string };
+  | { esito: "chiusa"; evento: Evento };
 
 /** Un passo verso `dir`: prima si gira, poi si cammina; le porte portano altrove (o dicono che sono chiuse). */
 export function passo(m: MappaDef, s: StatoMondo, dir: Dir, ctx: Contesto, giraPrima = true): Passo {
@@ -128,7 +134,7 @@ export function passo(m: MappaDef, s: StatoMondo, dir: Dir, ctx: Contesto, giraP
   const porta = portaA(m, x, y);
   if (porta) {
     if (vale(porta.se, ctx)) return { esito: "porta", porta };
-    return { esito: "chiusa", testo: porta.chiusa ?? "È chiuso." };
+    return { esito: "chiusa", evento: perchePorta(porta, ctx) };
   }
   if (solidoA(m, x, y, ctx)) return { esito: "bloccato" };
   s.x = x;
@@ -155,8 +161,7 @@ export function posizioneLibera(m: MappaDef, x: number, y: number, ctx: Contesto
     for (const [dx, dy] of Object.values(DELTA)) {
       const nx = cx + dx, ny = cy + dy, k = `${nx},${ny}`;
       if (raggiunte.has(k) || !dentro(nx, ny) || portaA(m, nx, ny)) continue;
-      const v = voce(m, nx, ny);
-      if (!v || v.solido || ogg.has(k)) continue;
+      if (!percorribile(voce(m, nx, ny), ctx) || ogg.has(k)) continue;
       raggiunte.add(k);
       coda.push([nx, ny]);
     }
@@ -184,6 +189,10 @@ export interface Regista {
   gira(d: Dir): void;
   buio(testo: string): Promise<void>;
   fine(testo: string, titolo: string, sotto?: string): Promise<void>;
+  negozio(id: string): Promise<void>;
+  quadro(q: string, ms?: number): Promise<void>;
+  copertina(testo: string, sotto?: string): Promise<void>;
+  protagonista(chi: "uomo" | "donna"): void;
   segna(s: string): void;
   togli(s: string): void;
 }
@@ -204,6 +213,10 @@ export async function esegui(ev: Evento, ctx: Contesto, r: Regista): Promise<voi
     else if ("gira" in c) r.gira(c.gira);
     else if ("buio" in c) await r.buio(c.buio);
     else if ("fine" in c) await r.fine(c.fine, c.titolo, c.sotto);
+    else if ("negozio" in c) await r.negozio(c.negozio);
+    else if ("quadro" in c) await r.quadro(c.quadro, c.ms);
+    else if ("copertina" in c) await r.copertina(c.copertina, c.sotto);
+    else if ("protagonista" in c) r.protagonista(c.protagonista);
   }
 }
 
@@ -216,6 +229,7 @@ export function testiEvento(ev: Evento): string[] {
     else if ("se" in c) { out.push(...testiEvento(c.allora)); out.push(...testiEvento(c.altrimenti ?? [])); }
     else if ("buio" in c) out.push(c.buio);
     else if ("fine" in c) out.push(c.titolo, c.fine, ...(c.sotto ? [c.sotto] : []));
+    else if ("copertina" in c) out.push(c.copertina, ...(c.sotto ? [c.sotto] : []));
   }
   return out;
 }

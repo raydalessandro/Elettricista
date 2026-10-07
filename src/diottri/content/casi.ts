@@ -129,7 +129,7 @@ export const CASI: CasoDef[] = [
         { id: "cr39", nome: "Organico 1,5", esito: "no", perche: "Con una miopia forte l'1,5 resta spesso.", materiale: "cr39" },
         { id: "i160", nome: "Organico 1,6", esito: "ok", perche: "Meglio dell'1,5, ma resta un po' spesso.", materiale: "i160" },
         { id: "i167", nome: "Organico 1,67", esito: "bene", perche: "Più alto l'indice, più sottile la lente.", materiale: "i167" },
-        { id: "i174", nome: "Organico 1,74", esito: "bene", perche: "Ancora più sottile, di poco: con l'antiriflesso va bene.", materiale: "i174" },
+        { id: "i174", nome: "Organico 1,74", esito: "bene", perche: "La più sottile: dall'1,67 cambia poco. Va con l'antiriflesso.", materiale: "i174" },
         { id: "pc", nome: "Policarbonato", esito: "ok", perche: "Più sottile dell'1,5, ma meno dell'1,67.", materiale: "pc" },
       ],
       trattamento: [

@@ -1,6 +1,7 @@
 /* Anteprime PNG della grafica di Diottri: le mappe intere, le mattonelle, gli oggetti, i personaggi.
    Uso:  npx tsx scripts/diottri-anteprima.ts mappa borgo [giorno|sera] [segni,separati,da,virgole] [fatti,…] [--out=nome]
-         npx tsx scripts/diottri-anteprima.ts mattonelle | oggetti [id,id,…] | figure   [--out=nome]
+         npx tsx scripts/diottri-anteprima.ts mattonelle | oggetti [id,id,…] | figure | mezzi | creature   [--out=nome]
+   «mezzi» mostra ogni mezzo con chi gioca (lui e lei) nelle quattro direzioni, fermo e in movimento, come nel gioco.
    Le immagini vanno in dist/anteprime/, ingrandite 3 volte, a pixel netti. */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -8,10 +9,12 @@ import { deflateSync } from "node:zlib";
 import { MAPPE, nebbia } from "../src/diottri/content/borgo";
 import { FIGURE, LUCCICHIO } from "../src/diottri/grafica/figure";
 import { type Bitmap, CELLA, dipingi, incolla, nuovaBitmap, riempi } from "../src/diottri/grafica/formato";
+import { CREATURE } from "../src/diottri/grafica/creature";
 import { MATTONELLE } from "../src/diottri/grafica/mattonelle";
+import { MEZZI } from "../src/diottri/grafica/mezzi";
 import { OGGETTI } from "../src/diottri/grafica/oggetti";
 import { FIGURE_PAL, type Luce } from "../src/diottri/grafica/tavolozze";
-import { bitmapFigura, bitmapMattonella, bitmapOggetto, componi, unisci } from "../src/diottri/mondo/disegno";
+import { bitmapCreatura, bitmapFigura, bitmapMattonella, bitmapOggetto, conMezzo, componi, unisci } from "../src/diottri/mondo/disegno";
 import { altezza, larghezza } from "../src/diottri/mondo/motore";
 
 const OUT = join(process.cwd(), "dist", "anteprime");
@@ -87,6 +90,16 @@ if (cosa === "mappa") {
   pezzi.push(...LUCCICHIO.map(l => dipingi(l, FIGURE_PAL.oro, CELLA, CELLA)));
   writeFileSync(nomeFile("figure"), png(foglio(pezzi, 8, CELLA), 5));
   console.log("figure (giù, su, sinistra, destra × 2 passi):", ids.join(" "), "+ luccichio");
+} else if (cosa === "mezzi") {
+  const ids = Object.keys(MEZZI);
+  const pezzi = ids.flatMap(id => ["tu_uomo", "tu_donna"].flatMap(chi => (["giu", "su", "sinistra", "destra"] as const).flatMap(d => [0, 1].map(p => conMezzo(chi, id, d, p)))));
+  writeFileSync(nomeFile("mezzi"), png(foglio(pezzi, 8, CELLA + 8), 5));
+  console.log("mezzi (lui, poi lei; giù, su, sinistra, destra × fermo e in movimento):", ids.join(" "));
+} else if (cosa === "creature") {
+  const ids = Object.keys(CREATURE);
+  const pezzi = ids.map(id => bitmapCreatura(id));
+  writeFileSync(nomeFile("creature"), png(foglio(pezzi, 4, 2 * CELLA), 4));
+  console.log("creature:", ids.join(" "));
 } else {
-  console.log("Uso: mappa <id> [giorno|sera] [segni] [fatti] · mattonelle · oggetti · figure");
+  console.log("Uso: mappa <id> [giorno|sera] [segni] [fatti] · mattonelle · oggetti · figure · mezzi · creature");
 }

@@ -1,9 +1,11 @@
-/* Controllo automatico dello standard di Diottri (docs/gioco/STANDARD.md, regole G1–G9).
+/* Controllo automatico dello standard di Diottri (docs/gioco/STANDARD.md, regole G1–G10).
    Lo usano npm run standard e i test: con un errore la mandata non esce. */
 import { CASI, INTRO_PROVE, ORDINE, RICONOSCIMENTI, SPECIE, vassoioPrima } from "../content";
 import { MAPPE } from "../content/borgo";
-import { apreEvento, testiEvento } from "../mondo/motore";
-import type { Comando, Evento } from "../mondo/tipi";
+import { ARTICOLI, MONDO_ORA, segnoDi } from "../content/negozi";
+import { provvigioneMinima } from "../core/economia";
+import { apreEvento, cosePresenti, personaggiPresenti, strada, testiEvento } from "../mondo/motore";
+import type { Comando, Contesto, Evento, StatoMondo } from "../mondo/tipi";
 import { lenteServe, riuscito, soluzioneProva } from "../core/caso";
 import { quarti } from "../core/rng";
 import { risolviCaso, risolviRic } from "../core/risolutore";
@@ -195,9 +197,43 @@ export function validateDiottri(): Finding[] {
   const aperti = new Set(Object.values(MAPPE).flatMap(m => [...m.personaggi.flatMap(p => p.parla.flatMap(b => apreEvento(b.fai))), ...m.cose.flatMap(c => c.tocca.flatMap(b => apreEvento(b.fai))), ...m.timbri.flatMap(t => (t.tocca ?? []).flatMap(b => apreEvento(b.fai)))]));
   for (const o of ORDINE) if (!aperti.has(o.id)) out.push({ lv: `mondo`, code: "G2", sev: "errore", msg: `nessuno nel mondo apre «${o.id}»` });
 
+  // G10 · i mezzi che servono per andare avanti si pagano con le vendite fatte prima, giocando bene
+  out.push(...checkMezzi());
+
   // l'ordine contiene tutto, una volta
   const ids = ORDINE.map(o => o.id);
   for (const c of CASI) if (!ids.includes(c.id)) out.push({ lv: c.id, code: "G2", sev: "errore", msg: "il caso non è nell'ordine" });
   for (const r of RICONOSCIMENTI) if (!ids.includes(r.id)) out.push({ lv: r.id, code: "G9", sev: "errore", msg: "il riconoscimento non è nell'ordine" });
+  return out;
+}
+
+/**
+ * G10: si gioca il percorso in fila, giocando bene ma senza vendere niente in più del necessario. Quando un passo
+ * non si raggiunge a piedi dall'ancora del borgo, serve un mezzo: deve esistere, e la cassa deve bastare.
+ */
+function checkMezzi(): Finding[] {
+  const out: Finding[] = [];
+  const borgo = MAPPE.borgo;
+  const segni = ["inizio", "misurato", "furto", "prologo"];
+  const fatti: string[] = [];
+  const ctx = (s: string[]): Contesto => ({ fatto: id => fatti.includes(id), segni: s });
+  const CASO = Object.fromEntries(CASI.map(c => [c.id, c]));
+  let cassa = 0;
+  for (const o of ORDINE) {
+    const c = ctx(segni);
+    const chi = [...personaggiPresenti(borgo, c).map(p => ({ x: p.x, y: p.y, apre: p.parla.flatMap(b => apreEvento(b.fai)) })), ...cosePresenti(borgo, c).map(k => ({ x: k.x, y: k.y, apre: k.tocca.flatMap(b => apreEvento(b.fai)) }))]
+      .find(p => p.apre.includes(o.id));
+    if (chi) {
+      const da: StatoMondo = { mappa: "borgo", x: borgo.ancora[0], y: borgo.ancora[1], dir: "su", segni };
+      if (!strada(borgo, da, chi.x, chi.y, c)) {
+        const mezzo = Object.values(ARTICOLI).find(a => a.mondo <= MONDO_ORA && !segni.includes(segnoDi(a.id)) && strada(borgo, da, chi.x, chi.y, ctx([...segni, segnoDi(a.id)])));
+        if (!mezzo) out.push({ lv: o.id, code: "G10", sev: "errore", msg: "non si raggiunge, neanche con un mezzo" });
+        else if (cassa < mezzo.prezzo) out.push({ lv: o.id, code: "G10", sev: "errore", msg: `serve ${mezzo.nome} (${mezzo.prezzo} €), ma giocando bene prima si guadagnano ${cassa} €` });
+        else { cassa -= mezzo.prezzo; segni.push(segnoDi(mezzo.id)); }
+      }
+    }
+    if (o.tipo === "caso") cassa += provvigioneMinima(CASO[o.id], 1, vassoioPrima(o.id));
+    fatti.push(o.id);
+  }
   return out;
 }

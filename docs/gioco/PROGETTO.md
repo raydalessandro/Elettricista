@@ -1,6 +1,6 @@
 # Diottri · progetto del gioco
 
-Versione 0.7 · 7 ottobre 2026 · approvato da Ray; mandata 2 uscita; il Borgo Diottria da girare, da giocare
+Versione 0.8 · 8 ottobre 2026 · approvato da Ray; il Borgo Diottria da girare, con l'introduzione, la vendita e i negozi
 
 Un gioco di ruolo con le creature, in stile Game Boy Color, dove tutto è ottica. Sta accanto al corso «Sfera Cilindro Asse»: il corso è il prontuario da tasca, il gioco è la ripetizione che si fa per divertimento, la sera, anche per un'ora di fila. Si finisce in circa otto ore, e dopo la fine la bottega resta aperta.
 
@@ -342,6 +342,17 @@ Il gioco deve essere bello: è anche così che si impara.
 
   Le parole normali dell'italiano e dell'ottica restano: la lega di titanio, i campioni, gli occhiali per la palestra.
 
+## Vendere e comprare (decisione di Ray, 7 ottobre 2026)
+
+Ray: «un incasso quando e se riesci anche a vendere l'occhiale ai personaggi, il 20% della vendita; negozi dove comprare bici, moto, macchina, barche; ogni mondo sbloccato offre cose migliori e più costose; alcune necessarie per alcuni passaggi, così devi anche vendere occhiali per proseguire; e un'introduzione che spiega, come nei giochi di una volta».
+
+- **L'introduzione:** la copertina coi Diottri, poi Iride in grande: il mondo dei Diottri, il mestiere, il 20%, i mezzi, il Pressappoco; poi si sceglie uomo o donna, e si entra nel borgo. Iride dà del tu, dall'introduzione in poi.
+- **La vendita:** un caso consegnato è un occhiale venduto. Lo scontrino si fa voce per voce dal listino del gioco (`src/diottri/content/listino.ts`): le lenti secondo il materiale, i trattamenti, le lenti da sole, la montatura se è nuova (quella del cliente non si vende). A chi gioca va il 20%. Con un allarme non si vende: prima il medico. I prezzi si vedono accanto a ogni scelta, in Costruisci.
+- **Vendere bene, non di più:** un pezzo «Va bene, ma…» più caro del necessario il cliente lo paga come il pezzo giusto più economico (sullo scontrino c'è scritto perché). Rende di più scoprire i bisogni chiedendo: Giulia che sta al computer compra anche il filtro. Rifare un caso paga solo se si vende meglio dell'ultima volta: niente soldi infiniti.
+- **I mezzi** (`src/diottri/content/negozi.ts`): nel Borgo la bici (Cicli Raggio, in piazza: più veloce, e serve per la strada della Valle) e la canoa (Nando, al lago: serve per l'isolotto dove c'è Polare). I negozi mostrano anche i mezzi dei mondi dopo, più cari: mountain bike e motorino nella Valle, motoscafo nella Laguna, moto, automobile, barca a vela. Il controllo G10 verifica che i mezzi necessari si paghino giocando bene.
+- **Il Pressappoco** passa dalla stazione e vende occhiali pronti senza misurare: provarli fa girare la testa.
+- **I listini veri** del negozio non sono nel gioco: il repository e il sito sono pubblici, e il listino contiene anche costi, margini e regole di sconto interne. Il gioco ne usa la logica, a voci e a fasce, con prezzi di gioco tondi. Da decidere con Ray se mettere i prezzi al pubblico veri.
+
 ## Le mandate
 
 | N. | Mandata | Cosa esce |
@@ -541,6 +552,7 @@ Vanno in `docs/gioco/STANDARD.md`, `docs/gioco/STILE.md` e `docs/gioco/TECNICA.m
 
 ## Storia del documento
 
+- **0.8 · 8 ottobre 2026.** L'introduzione, la vendita col 20%, i negozi e i mezzi (bici e canoa nel Borgo; quelli dei mondi dopo in vetrina), l'isolotto del lago, la strada per la Valle, il Pressappoco alla stazione. Dopo una prova alla cieca: un pezzo che non serviva si paga come quello giusto, rifare un caso paga solo se si vende meglio, le battute dopo un caso tornano se il gioco si chiude sul risultato.
 - **0.7 · 7 ottobre 2026.** Il Borgo Diottria da girare, con i due giri dentro: motore, disegni, prologo, finale. Dopo due prove alla cieca nel borgo, l'ordine cambia (Cello prima di Davide) e il prologo esce in strada. Decisioni 7 e 8 di Ray (la misura dell'ottico basta; i trattamenti servono al cliente).
 - **0.6 · 7 ottobre 2026.** Uscita la mandata 2 (i due giri, in grezzo), dopo la prova alla cieca e la revisione di ottica. Regole in `docs/gioco/STANDARD.md`. Una domanda per Ray sulla legge (l'ipermetropia senza ricetta).
 - **0.5 · 7 ottobre 2026.** Approvato da Ray, con le sue decisioni: nomi liberi, scelta uomo o donna, tono, confine di legge, prova fatta da lui, prontuario del corso corretto.

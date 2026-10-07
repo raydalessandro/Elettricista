@@ -15,7 +15,7 @@ Due corsi di formazione per Ray (Milano), nello stesso sito. Esce **un capitolo 
 ```sh
 npm install
 npm run dev          # sito in locale
-npm run check        # tipi, lint, standard (S1–S18, O1–O10, G1–G9), test unitari e giri completi
+npm run check        # tipi, lint, standard (S1–S18, O1–O10, G1–G10), test unitari e giri completi
 npm run build        # build di produzione
 npm run test:e2e     # prove col dito su telefono 390×844 (serve la build); in locale: PW_CHROMIUM=/percorso/chromium
 npm run standard     # solo il controllo degli standard, livello per livello, i due corsi e il gioco
@@ -24,7 +24,7 @@ npm run packets:ottica   # ottica: pacchetti per la prova alla cieca (dist/playt
 npx tsx scripts/banco.ts g1 1      # elettricista: banco guasti da riga di comando (comandi da stdin)
 npx tsx scripts/negozio.ts o1 7    # ottica: prova lenti e banco da riga di comando; il seme sceglie la ricetta del cliente
 npx tsx scripts/diottri.ts 7       # Diottri: il borgo (mappa in caratteri: su/giu/sinistra/destra [n], a, b, menu) e il banco (bottoni numerati) in testo, da stdin; DIOTTRI_SALVA=file.json tiene i progressi
-npx tsx scripts/diottri-anteprima.ts mappa borgo sera   # Diottri: i disegni in PNG (mappa, mattonelle, oggetti, figure) in dist/anteprime/
+npx tsx scripts/diottri-anteprima.ts mappa borgo sera   # Diottri: i disegni in PNG (mappa, mattonelle, oggetti, figure, mezzi, creature) in dist/anteprime/
 ```
 
 ## Dove sta cosa
@@ -47,11 +47,11 @@ npx tsx scripts/diottri-anteprima.ts mappa borgo sera   # Diottri: i disegni in 
 | `src/ottica/content/` | Ottica · contenuti: `cap1.ts`, prontuario, `index.ts` |
 | `src/ottica/standard/validate.ts` | Ottica · controllo automatico dello standard (O1–O10, con ogni variante) |
 | `src/ottica/ui.ts` | Ottica · interfaccia (stringhe HTML + un ascoltatore), montata da `src/components/Ottica.tsx`; stile in `src/app/ottica.css`, tutto sotto `.ott` |
-| `src/diottri/core/` | Diottri · motori senza disegno: il caso (`caso.ts`), le tacche dai modelli (`valuta.ts`), il riconoscimento (`riconosci.ts`), il risolutore, i semi |
-| `src/diottri/content/` | Diottri · casi, riconoscimenti, specie, l'ordine dei passi; il mondo in `borgo.ts` (mappe, personaggi, prologo, finale) |
+| `src/diottri/core/` | Diottri · motori senza disegno: il caso (`caso.ts`), le tacche dai modelli (`valuta.ts`), il riconoscimento (`riconosci.ts`), il risolutore, i semi; la vendita e il 20% (`vendita.ts`), i conti per i controlli (`economia.ts`) |
+| `src/diottri/content/` | Diottri · casi, riconoscimenti, specie, l'ordine dei passi; il mondo in `borgo.ts` (mappe, personaggi, introduzione, prologo, finale); il listino di gioco (`listino.ts`) e i negozi coi mezzi di ogni mondo (`negozi.ts`) |
 | `src/diottri/mondo/` | Diottri · il mondo: motore senza disegno (`motore.ts`: passi, porte, chi c'è davanti, eventi), disegno (`disegno.ts`), la console sul telefono (`guscio.ts`), il robot che gioca tutto il borgo (`robot.ts`) |
-| `src/diottri/grafica/` | Diottri · i disegni come dati: mattonelle, oggetti, figure, tavolozze di giorno, sera e dentro |
-| `src/diottri/standard/validate.ts` | Diottri · controllo automatico (G1–G9: riquadro 3×24, casi ben fatti, risolutore da tre stelle, elenco nero) |
+| `src/diottri/grafica/` | Diottri · i disegni come dati: mattonelle, oggetti (anche i negozi), figure, i mezzi (bici e canoa sopra chi gioca), i Diottri in grande per l'introduzione, tavolozze di giorno, sera e dentro |
+| `src/diottri/standard/validate.ts` | Diottri · controllo automatico (G1–G10: riquadro 3×24, casi ben fatti, risolutore da tre stelle, elenco nero, mezzi che si pagano) |
 | `src/diottri/ui.ts`, `src/diottri/draw.ts` | Diottri · interfaccia (stringhe HTML + un ascoltatore) e disegni; montata da `src/components/Diottri.tsx`, stile in `src/app/diottri.css`, tutto sotto `.dio` |
 | `tests/unit/` | Vitest: motori, standard, giri completi in jsdom |
 | `tests/e2e/` | Playwright: il dito vero sul telefono |

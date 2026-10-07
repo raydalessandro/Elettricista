@@ -25,6 +25,7 @@ Un gioco di ruolo in stile Game Boy Color, accanto al corso di ottica: per impar
 
 - **Mandata 2** — i due giri del gioco: cinque clienti al banco (chiedi, misura, costruisci l'occhiale, mostra, consegna; o il medico) e cinque Diottri da riconoscere con le prove vere del banco. I progressi restano sul dispositivo (`diottri.v1`).
 - **Il Borgo Diottria** — i due giri dentro un mondo da girare, come su un Game Boy Color tenuto in verticale: croce, A, B e menu sul telefono. Il prologo nella bottega di Iride, poi cinque clienti per il borgo e cinque Diottri che luccicano dove te li indicano. Il motore in `src/diottri/mondo/`, i disegni (a mano, come dati) in `src/diottri/grafica/`, la mappa e la storia in `src/diottri/content/borgo.ts`. Anteprime dei disegni: `npx tsx scripts/diottri-anteprima.ts mappa borgo`.
+- **Vendere e comprare** — si comincia da un'introduzione con la Maestra Iride. Ogni occhiale consegnato è venduto, e il 20% va in cassa (prezzi di gioco, voce per voce come in negozio; un pezzo che non serviva il cliente lo paga come quello giusto). Con la cassa si comprano i mezzi: la bici e la canoa nel Borgo, poi mezzi migliori e più cari nei mondi dopo. La canoa serve per l'isolotto del lago: per andare avanti bisogna anche vendere bene.
 
 Progetto in [`docs/gioco/PROGETTO.md`](docs/gioco/PROGETTO.md), regole in [`docs/gioco/STANDARD.md`](docs/gioco/STANDARD.md).
 

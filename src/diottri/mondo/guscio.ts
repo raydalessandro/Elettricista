@@ -2,10 +2,12 @@
    Lo schermo 160×144 a pixel netti dentro una scocca da console, la croce e i tasti A e B sotto, come un
    Game Boy tenuto in verticale. Qui ci sono il ciclo dei fotogrammi, i tasti (dito e tastiera), il riquadro
    dei dialoghi, le scelte, il menu, le porte e gli eventi. La logica sta in motore.ts; il disegno in disegno.ts. */
-import { fase, INIZIO, MAPPE, nebbia, obiettivo } from "../content/borgo";
+import { DOPO, fase, INIZIO, MAPPE, nebbia, obiettivo } from "../content/borgo";
+import { ARTICOLI, MONDI, MONDO_ORA, NEGOZI, segnoDi } from "../content/negozi";
+import { euro } from "../core/vendita";
 import { CELLA } from "../grafica/formato";
-import { componi, SCHERMO_H, SCHERMO_W } from "./disegno";
-import { chiDavanti, esegui, eventoArrivo, eventoDavanti, passo, posizioneLibera, type Regista } from "./motore";
+import { componi, componiIntro, SCHERMO_H, SCHERMO_W } from "./disegno";
+import { chiDavanti, esegui, eventoArrivo, eventoDavanti, passo, posizioneLibera, type Regista, voce } from "./motore";
 import { type Contesto, DELTA, type Dir, type Evento, type StatoMondo } from "./tipi";
 
 export interface Collegamenti {
@@ -18,11 +20,20 @@ export interface Collegamenti {
   salva(): void;
   /** una voce del menu che porta fuori dal mondo: il vassoio, il percorso */
   esci(voce: "vassoio" | "percorso"): void;
+  /** la cassa: quanto ha chi gioca, in euro */
+  soldi(): number;
+  /** paga un acquisto: false (e non paga) se i soldi non bastano */
+  spendi(n: number): boolean;
+  /** quanto ha reso l'ultimo caso (la parte di chi vende), e lo azzera: per il «+52 €» sullo schermo */
+  incasso(): number;
+  /** chi gioca, scelto nell'introduzione */
+  scegli(chi: "uomo" | "donna"): void;
 }
 
 type Tasto = "a" | "b" | "menu";
 const OPPOSTO: Record<Dir, Dir> = { su: "giu", giu: "su", sinistra: "destra", destra: "sinistra" };
-const PASSO_MS = 190; // una mattonella
+const PASSO_MS = 190; // una mattonella a piedi
+const PASSO_BICI_MS = 105; // in bici
 const GIRO_MS = 90; // girarsi senza muoversi
 /** In jsdom (test e riga di comando) non c'è il canvas: la logica gira lo stesso, il disegno no. */
 const SENZA_CANVAS = typeof navigator !== "undefined" && /jsdom/i.test(navigator.userAgent);
@@ -30,6 +41,10 @@ const rAF = (f: (t: number) => void): number =>
   typeof requestAnimationFrame === "function" && !SENZA_CANVAS ? requestAnimationFrame(f) : (setTimeout(() => f(performance.now()), 50) as unknown as number);
 const ferma = (id: number) => { if (typeof cancelAnimationFrame === "function" && !SENZA_CANVAS) cancelAnimationFrame(id); else clearTimeout(id); };
 const esc = (s: string) => s.replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]!);
+/** I mondi in breve, per la riga di un articolo che si vende più avanti. */
+const BREVE = ["", "Borgo", "Valle", "Laguna", "Torre", "Città", "Laboratorio", "Costa", "Mare", "Ottotipo"];
+/** «nella Valle delle Montature», «nel Grande Laboratorio», «sulla Costa del Sole»… */
+const IN_MONDO = (n: number) => (/^(Il |Mare)/.test(MONDI[n]) ? `nel ${MONDI[n].replace(/^Il /, "")}` : /^Costa/.test(MONDI[n]) ? `sulla ${MONDI[n]}` : /^Borgo/.test(MONDI[n]) ? `nel ${MONDI[n]}` : `nella ${MONDI[n]}`);
 
 export function creaGuscio(c: Collegamenti) {
   const st = c.stato;
@@ -45,6 +60,7 @@ export function creaGuscio(c: Collegamenti) {
   let mossa: { da: [number, number]; t0: number } | null = null;
   let passi = 0; // per alternare le gambe
   let occupato = false; // un evento in corso: niente passi
+  let profondita = 0; // eventi dentro eventi (un arrivo durante un evento)
   let versi: Record<string, Dir> = {};
   let menuAperto = false;
   let attesa: ((t: Tasto | number) => void) | null = null; // chi aspetta un tasto (riquadro, scelta, buio)
@@ -56,6 +72,12 @@ export function creaGuscio(c: Collegamenti) {
   let testoPieno = true;
   let typer = 0;
   let avviato = false;
+  /** in bici (si sale e si scende dal menu); sull'acqua si va in canoa da soli */
+  let inBici = false;
+  /** l'introduzione: cosa c'è sullo schermo */
+  let quadro = "titolo";
+  const durata = () => (inBici ? PASSO_BICI_MS : PASSO_MS);
+  const sullAcqua = (x = st.x, y = st.y) => voce(mappa(), x, y)?.tile === "acqua";
 
   // ---------- il DOM ----------
   function html(): string {
@@ -115,9 +137,14 @@ export function creaGuscio(c: Collegamenti) {
     ferma(raf);
     raf = rAF(ciclo);
     if (!occupato) sistema();
+    inBici = st.mezzo === "bici" && mappa().fuori;
     if (!avviato) {
       avviato = true;
-      arrivo(true);
+      // chiuso sul risultato di un caso: partono le battute che mancavano; se no, l'arrivo nella mappa
+      const id = st.sospeso;
+      if (id) { delete st.sospeso; c.salva(); }
+      if (id && c.fatto(id) && DOPO[id]) void evento(DOPO[id]);
+      else void arrivo(true);
     } else if (!occupato && !attesa) {
       // di ritorno da un caso fatto dal percorso: se la storia ha un arrivo in sospeso (il finale), parte adesso
       const ev = eventoArrivo(mappa(), ctx);
@@ -212,8 +239,11 @@ export function creaGuscio(c: Collegamenti) {
   function apriMenu() {
     menuAperto = true;
     const m = q<HTMLElement>(".gb-menu")!;
-    m.innerHTML = [["passo", "Il prossimo passo"], ["vassoio", "Vassoio e Campionario"], ["percorso", "Il percorso"], ["chiudi", "Chiudi"]]
-      .map(([v, t], i) => `<button role="menuitem" data-voce="${v}" class="${i === 0 ? "on" : ""}">${t}</button>`).join("");
+    const voci: [string, string][] = [["passo", "Il prossimo passo"], ["vassoio", "Vassoio e Campionario"], ["percorso", "Il percorso"]];
+    if (st.segni.includes(segnoDi("bici"))) voci.push(["bici", inBici ? "Scendi dalla bici" : "Sali in bici"]);
+    voci.push(["chiudi", "Chiudi"]);
+    m.innerHTML = `<p class="gb-cassa">Cassa: ${euro(c.soldi())}</p>` +
+      voci.map(([v, t], i) => `<button role="menuitem" data-voce="${v}" class="${i === 0 ? "on" : ""}">${t}</button>`).join("");
     m.hidden = false;
   }
   function chiudiMenu() { menuAperto = false; const m = q<HTMLElement>(".gb-menu"); if (m) m.hidden = true; }
@@ -221,6 +251,14 @@ export function creaGuscio(c: Collegamenti) {
     chiudiMenu();
     if (v === "passo") void evento([{ dice: obiettivo(ctx) || "Esplora il borgo." }]);
     else if (v === "vassoio" || v === "percorso") { c.salva(); c.esci(v); }
+    else if (v === "bici") {
+      if (inBici) inBici = false;
+      else if (!mappa().fuori) void evento([{ dice: "Qui dentro si va a piedi." }]);
+      else if (sullAcqua()) void evento([{ dice: "Sull'acqua, in bici, no!" }]);
+      else inBici = true;
+      if (inBici) st.mezzo = "bici"; else delete st.mezzo;
+      c.salva();
+    }
   }
 
   // ---------- parlare ----------
@@ -235,15 +273,20 @@ export function creaGuscio(c: Collegamenti) {
 
   async function evento(ev: Evento) {
     occupato = true;
+    profondita++;
     tenuto = null;
     try {
       await esegui(ev, ctx, regista);
     } finally {
-      occupato = false;
-      versi = {};
-      nascondi(".gb-riquadro");
-      aggiornaVista();
-      c.salva();
+      profondita--;
+      if (!profondita) {
+        occupato = false;
+        versi = {};
+        nascondi(".gb-riquadro");
+        aggiornaVista();
+        if (st.sospeso) delete st.sospeso; // le battute dopo il caso sono state dette
+        c.salva();
+      }
     }
   }
 
@@ -302,11 +345,15 @@ export function creaGuscio(c: Collegamenti) {
     },
     async caso(id) {
       nascondi(".gb-riquadro");
+      st.sospeso = id;
       c.salva();
       await c.caso(id);
+      const n = c.incasso();
+      if (n) avviso(`Incasso +${euro(n)}`);
     },
     async ric(id) {
       nascondi(".gb-riquadro");
+      st.sospeso = id;
       c.salva();
       await c.ric(id);
       nebbiaVista = nebbia(ctx); // il Diottro ripreso: il borgo si vede meglio subito
@@ -333,10 +380,44 @@ export function creaGuscio(c: Collegamenti) {
     },
     segna(s) { if (!st.segni.includes(s)) st.segni.push(s); c.salva(); },
     togli(s) { st.segni = st.segni.filter(x => x !== s); c.salva(); },
+    async negozio(id) {
+      const n = NEGOZI[id];
+      if (!n) return;
+      await regista.dice(n.saluto, n.chi);
+      // si vedono i mezzi di questo mondo e di quelli subito dopo: ogni mondo ne vende di migliori e più cari
+      const lista = n.articoli.map(a => ARTICOLI[a]).filter(a => a.mondo <= MONDO_ORA + 2).slice(0, 4);
+      for (;;) {
+        const righe = lista.map(a => (st.segni.includes(segnoDi(a.id)) ? `${a.nome} ✓` : a.mondo > MONDO_ORA ? `${a.nome} · ${BREVE[a.mondo]}` : `${a.nome} ${euro(a.prezzo)}`));
+        const i = await regista.scelta(`Cosa ti serve? In cassa hai ${euro(c.soldi())}.`, [...righe, "Esci"], { annulla: righe.length });
+        const a = lista[i];
+        if (!a) return;
+        if (st.segni.includes(segnoDi(a.id))) { await regista.dice("Ce l'hai già!", n.chi); continue; }
+        if (a.mondo > MONDO_ORA) { await regista.dice(`${a.nome}: arriva più avanti, ${IN_MONDO(a.mondo)}.`, n.chi); continue; }
+        const si = await regista.scelta(`${a.nome}: ${euro(a.prezzo)}. La compri?`, ["Sì", "No"], { annulla: 1 });
+        if (si !== 0) continue;
+        if (!c.spendi(a.prezzo)) { await regista.dice(`Ti mancano ${euro(a.prezzo - c.soldi())}: vendi qualche occhiale e torna!`, n.chi); continue; }
+        regista.segna(segnoDi(a.id));
+        await regista.dice(a.dopo, n.chi);
+        return;
+      }
+    },
+    async quadro(nuovo, ms) {
+      quadro = nuovo;
+      if (ms) { nascondi(".gb-riquadro"); await new Promise(r => setTimeout(r, el ? ms : 0)); }
+    },
+    async copertina(testo, sotto) {
+      nascondi(".gb-riquadro");
+      const v = q<HTMLElement>(".gb-velo");
+      if (v) { v.hidden = false; v.classList.add("su", "copertina"); v.innerHTML = `<b>${esc(testo)}</b>${sotto ? `<span>${esc(sotto)}</span>` : ""}<small>Premi A</small>`; }
+      await aspetta();
+      if (v) { v.classList.remove("su", "copertina"); v.hidden = true; v.textContent = ""; }
+    },
+    protagonista(chi) { c.scegli(chi); },
   };
 
   // ---------- porte e arrivi ----------
   async function vai(dest: { mappa: string; x: number; y: number; dir: Dir }) {
+    nascondi(".gb-riquadro");
     const v = q<HTMLElement>(".gb-velo");
     if (v) { v.hidden = false; v.classList.add("su"); }
     await new Promise(r => setTimeout(r, el ? 160 : 0));
@@ -345,20 +426,26 @@ export function creaGuscio(c: Collegamenti) {
     st.y = dest.y;
     st.dir = dest.dir;
     mossa = null;
+    if (!mappa().fuori) inBici = false;
     sistema();
+    if (st.mezzo === "bici" && mappa().fuori) inBici = true; // uscendo da un negozio si risale in bici
     c.salva();
     if (v) { v.classList.remove("su"); v.hidden = true; }
     await arrivo(false);
   }
 
+  /** Una scritta in alto a sinistra, per un attimo: il nome del posto, l'incasso. */
+  function avviso(t: string, ms = 1400) {
+    const l = q<HTMLElement>(".gb-luogo");
+    if (!l) return;
+    l.textContent = t;
+    l.hidden = false;
+    window.setTimeout(() => { if (l.textContent === t) l.hidden = true; }, ms);
+  }
+
   async function arrivo(primo: boolean) {
     const m = mappa();
-    const l = q<HTMLElement>(".gb-luogo");
-    if (l && !primo) {
-      l.textContent = m.nome;
-      l.hidden = false;
-      window.setTimeout(() => { l.hidden = true; }, 1400);
-    }
+    if (!primo && m.id !== "intro") avviso(m.nome);
     const ev = eventoArrivo(m, ctx);
     if (ev) await evento(ev);
   }
@@ -377,7 +464,8 @@ export function creaGuscio(c: Collegamenti) {
     const p = passo(m, st, d, ctx, false);
     if (p.esito === "mosso") { mossa = { da: prima, t0: ora }; passi++; c.salva(); }
     else if (p.esito === "porta") { tenuto = null; void (async () => { occupato = true; try { await vai(p.porta.verso); } finally { occupato = false; } })(); }
-    else if (p.esito === "chiusa") { tenuto = null; void evento([{ dice: p.testo }]); }
+    else if (p.esito === "chiusa") { tenuto = null; void evento(p.evento); }
+    if (p.esito === "mosso" && sullAcqua() && inBici) { inBici = false; delete st.mezzo; } // sull'acqua si va in canoa
   }
 
   /** Un passo intero, subito, senza animazione: per i test e il robot. */
@@ -386,14 +474,14 @@ export function creaGuscio(c: Collegamenti) {
     st.dir = d;
     const p = passo(mappa(), st, d, ctx, false);
     if (p.esito === "porta") { void vai(p.porta.verso); return "porta"; }
-    if (p.esito === "chiusa") { void evento([{ dice: p.testo }]); return "chiusa"; }
-    if (p.esito === "mosso") c.salva();
+    if (p.esito === "chiusa") { void evento(p.evento); return "chiusa"; }
+    if (p.esito === "mosso") { if (sullAcqua() && inBici) { inBici = false; delete st.mezzo; } c.salva(); }
     return p.esito;
   }
 
   // ---------- il ciclo ----------
   function ciclo(ora: number) {
-    if (mossa && ora - mossa.t0 >= PASSO_MS) mossa = null;
+    if (mossa && ora - mossa.t0 >= durata()) mossa = null;
     if (!mossa && tenuto && !occupato && !attesa && !menuAperto) prova(tenuto, ora);
     disegna(ora);
     raf = rAF(ciclo);
@@ -405,15 +493,25 @@ export function creaGuscio(c: Collegamenti) {
     const g1 = sf?.getContext?.("2d"), g2 = pr?.getContext?.("2d");
     if (!sf || !pr || !g1 || !g2) return;
     const m = mappa();
+    if (m.id === "intro") {
+      const f = componiIntro(quadro, ora, c.chi());
+      g1.putImageData(new ImageData(f.sfondo.data, SCHERMO_W, SCHERMO_H), 0, 0);
+      g2.clearRect(0, 0, SCHERMO_W, SCHERMO_H);
+      g2.putImageData(new ImageData(f.primo.data, SCHERMO_W, SCHERMO_H), 0, 0);
+      sf.style.filter = "";
+      return;
+    }
     let px = st.x * CELLA, py = st.y * CELLA, passoN = 0;
     if (mossa) {
-      const k = Math.min(1, (ora - mossa.t0) / PASSO_MS);
+      const k = Math.min(1, (ora - mossa.t0) / durata());
       px = (mossa.da[0] + (st.x - mossa.da[0]) * k) * CELLA;
       py = (mossa.da[1] + (st.y - mossa.da[1]) * k) * CELLA;
       passoN = k > 0.2 && k < 0.8 ? 1 : 0;
     }
     const luce = m.fuori ? faseVista : "interno";
-    const f = componi({ m, luce, ctx, tu: { px, py, dir: st.dir, passo: passoN, figura: c.chi() === "donna" ? "tu_donna" : "tu_uomo", alterna: passi % 2 === 1 }, versi, t: ora });
+    const mezzo = sullAcqua() ? "canoa" : inBici ? "bici" : undefined;
+    // in bici le ruote girano sempre mentre si va; fermi, il fotogramma fermo
+    const f = componi({ m, luce, ctx, tu: { px, py, dir: st.dir, passo: passoN, figura: c.chi() === "donna" ? "tu_donna" : "tu_uomo", alterna: passi % 2 === 1, mezzo }, versi, t: ora });
     g1.putImageData(new ImageData(f.sfondo.data, SCHERMO_W, SCHERMO_H), 0, 0);
     g2.clearRect(0, 0, SCHERMO_W, SCHERMO_H);
     g2.putImageData(new ImageData(f.primo.data, SCHERMO_W, SCHERMO_H), 0, 0);
@@ -443,6 +541,10 @@ export function creaGuscio(c: Collegamenti) {
     /** il giorno o la sera, e lo starato, che si vedono adesso */
     get fase() { return faseVista; },
     get nebbia() { return nebbiaVista; },
+    /** il mezzo di adesso: la canoa sull'acqua, la bici se ci sei sopra */
+    get mezzo() { return sullAcqua() ? "canoa" : inBici ? "bici" : null; },
+    /** l'introduzione: cosa c'è sullo schermo */
+    get quadro() { return mappa().id === "intro" ? quadro : null; },
     stato: st,
     DELTA,
   };

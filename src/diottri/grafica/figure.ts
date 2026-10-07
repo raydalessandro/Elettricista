@@ -4,6 +4,7 @@
    giù fermo · giù passo · su fermo · su passo · lato fermo · lato passo. Il lato guarda a sinistra: a destra lo specchia
    il programma. Nel «passo» la testa scende di un pixel e una gamba va avanti. */
 import type { Figura } from "./formato";
+import { FIGURE_NUOVE } from "./figure_nuove";
 
 /** Divide un foglio (16 righe, sei fotogrammi da 16 caratteri separati da uno spazio) in una figura. */
 function foglio(pal: string, righe: string[]): Figura {
@@ -210,6 +211,7 @@ export const FIGURE: Record<string, Figura> = {
   paolo: PAOLO,
   luisa: LUISA,
   passante: PASSANTE,
+  ...FIGURE_NUOVE,
 };
 
 /** Il luccichio, dove si nasconde un Diottro: tre fotogrammi, tavolozza «oro» (1 chiaro, 2 medio, 3 scuro). */

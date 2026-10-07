@@ -111,10 +111,11 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
     await mount();
   });
 
-  it("si comincia scegliendo chi sei; il percorso si apre dopo il prologo", () => {
-    expect(text()).toContain("Chi sei?");
-    tap("[data-act=chi][data-arg=donna]");
-    expect(F.S.screen).toBe("mondo"); // si comincia nel borgo
+  it("si comincia dall'introduzione; il percorso si apre dopo il prologo", () => {
+    expect(F.S.screen).toBe("mondo");
+    expect(F.mondo.stato.mappa).toBe("intro");
+    act("chi", "donna"); // chi gioca: salta l'introduzione
+    expect(F.mondo.stato.mappa).toBe("borgo");
     act("percorso");
     expect(text()).toContain("Il percorso si apre dopo la prima visita nella bottega di Iride.");
     expect(app().querySelector("[data-act=apri]")).toBeNull();
@@ -149,6 +150,8 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
         expect(text()).toMatch(/Ci vedo!|Al medico/);
         expect(app().querySelectorAll(".overlay.fine .stella.on").length, p.id).toBe(3);
         expect(text()).toContain("Tre stelle su tre: occhio, spiegazione e soluzione.");
+        if (p.id !== "c5") expect(text()).toContain("A te il 20%");
+        else expect(text()).toContain("Con un allarme non si vende");
         tap("[data-act=fineCaso]");
       } else {
         giocaRic(p.id);
@@ -163,6 +166,7 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
     expect(Object.keys(prog.fatti).sort()).toEqual(ORDINE.map(o => o.id).sort());
     expect(prog.vassoio).toEqual(expect.arrayContaining(["conca", "bombo", "rullo", "verdino", "polare", "bruno", "cello"]));
     expect(prog.chi).toBe("donna");
+    expect(prog.soldi).toBeGreaterThanOrEqual(12 + 52 + 68 + 60); // le quattro vendite, giocate bene
   });
 
   it("chiudi e riapri: la storia è salvata e continua", async () => {
@@ -227,7 +231,7 @@ describe("Diottri · la partita intera nell'interfaccia", () => {
   it("la prova lenti avvisa quando serve un Diottro che non hai", async () => {
     localStorage.removeItem("diottri.v1");
     await mount();
-    tap("[data-act=chi][data-arg=uomo]");
+    act("chi", "uomo");
     dopoIlPrologo();
     act("percorso");
     tap("[data-act=apri][data-arg=c1]");

@@ -19,7 +19,7 @@ export const RICONOSCIMENTI: RiconoscimentoDef[] = [
   },
   {
     id: "r3", n: 3, specie: "polare",
-    dove: "In riva al lago, al sole.",
+    dove: "Sull'isolotto del lago, al sole.",
     grandezza: { tipo: "categoria", valori: [2, 3] },
     prove: { polarizzate: "utile", telefono: "utile", luce: "utile", neutralizza: "inutile", caldo: "dannosa" },
     opzioni: [{ id: "polare", nome: "Polarizzata" }, { id: "bruno", nome: "Da sole normale" }, { id: "verdino", nome: "Antiriflesso" }],

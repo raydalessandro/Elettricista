@@ -50,6 +50,8 @@ interface Guscio {
   scelta: string[] | null;
   fase: "giorno" | "sera";
   nebbia: number;
+  mezzo: string | null;
+  quadro: string | null;
   indiceScelta: number;
   riquadro: { chi: string; testo: string } | null;
   pieno: boolean;
@@ -57,7 +59,7 @@ interface Guscio {
   velo: string;
   occupato: boolean;
 }
-interface Dio { S: { screen: string }; prog: { fatti: Record<string, { preso?: boolean; stelle?: number }> }; mondo: Guscio }
+interface Dio { S: { screen: string }; prog: { fatti: Record<string, { preso?: boolean; stelle?: number }>; soldi?: number }; mondo: Guscio }
 const D = () => (w as unknown as { __dio: Dio }).__dio;
 const pausa = (ms: number) => new Promise(r => setTimeout(r, ms));
 const nelBorgo = () => D().S.screen === "mondo" && !!app.querySelector(".gb");
@@ -125,7 +127,18 @@ function schermoBanco(): string {
 /* ---------- il borgo, in testo: le 10×9 mattonelle che si vedono sullo schermo ---------- */
 const PERSONE: Record<string, [string, string]> = {
   marco: ["M", "Marco"], giulia: ["G", "Giulia"], davide: ["D", "Davide"], paolo: ["P", "Paolo"], luisa: ["L", "Luisa"],
-  iride: ["I", "la Maestra Iride"], passante: ["Q", "un passante"],
+  iride: ["I", "la Maestra Iride"], passante: ["Q", "un passante"], ciclista: ["R", "Rita, del negozio di bici"], barcaiolo: ["N", "Nando, delle barche"],
+};
+/** L'introduzione non ha una mappa: si dice cosa c'è sullo schermo. */
+const QUADRI: Record<string, string> = {
+  titolo: "la copertina: in alto il titolo, sotto tre Diottri che saltellano (lenti vive con gli occhi: una blu, una arancione, una verde chiaro)",
+  iride: "la Maestra Iride, in grande: capelli castani, occhiali, vestito prugna",
+  diottro: "Iride a sinistra; a destra, grande, un Diottro: un disco blu dal bordo spesso e il centro chiaro, con gli occhi e i piedini",
+  diottri: "quattro Diottri in fila: uno blu, uno arancione e bombato, uno quasi trasparente con un riflesso verde, uno grigio scuro a righe",
+  pressappoco: "su un fondo rosso scuro, l'ombra di un uomo coi capelli tirati indietro e gli occhiali da sole",
+  scelta: "due figure in grande: a sinistra un uomo, a destra una donna, tutti e due con gli occhiali e la maglia verde petrolio",
+  tu: "chi gioca, in grande",
+  "tu-piccolo": "chi gioca, piccolo piccolo, al centro",
 };
 const COSE: Record<string, [string, string]> = {
   bottega: ["b", "la bottega dell'ottico"], casa_rossa: ["h", "una casa"], casa_blu: ["h", "una casa"], merceria: ["m", "la merceria"],
@@ -133,6 +146,8 @@ const COSE: Record<string, [string, string]> = {
   fontana: ["f", "la fontana"], cancello_chiuso: ["c", "un cancello chiuso"], cancello_aperto: ["c", "un cancello aperto"],
   banco: ["k", "il banco (si parla da questa parte)"], scaffale: ["y", "uno scaffale"], specchio: ["j", "uno specchio"],
   vetrinetta: ["v", "una vetrinetta"], campionario: ["w", "il campionario"], cassetta: ["z", "una cassetta"], pianta: ["x", "una pianta"],
+  cicli: ["r", "il negozio di bici"], capanno: ["a", "un capanno di legno, con dei remi"], canoa_riva: ["u", "una canoa sulla sabbia"],
+  banco_cicli: ["k", "il banco (si parla da questa parte)"], bici_esposta: ["q", "una bici in vetrina"],
 };
 function schermoMondo(): string {
   const g = D().mondo;
@@ -141,7 +156,16 @@ function schermoMondo(): string {
   const ctx = { fatto: (id: string) => { const f = D().prog.fatti[id]; return !!f && (!!f.preso || !!f.stelle); }, segni: st.segni };
   const out: string[] = [];
   const n = m.fuori ? g.nebbia : 0;
-  out.push(`# ${m.nome} · ${m.fuori ? (g.fase === "sera" ? "è sera" : "è giorno") : "dentro"}${n ? ` · lo sfondo è sfocato (${n} su 5)` : ""}`);
+  const cassa = `cassa ${D().prog.soldi ?? 0} €`;
+  if (g.quadro) {
+    out.push(`# L'introduzione · sullo schermo: ${QUADRI[g.quadro] ?? g.quadro}`);
+    if (g.velo) out.push(`(sopra, in grande) ${spazi(g.velo)}`);
+    const rq0 = g.riquadro;
+    if (rq0) out.push(`RIQUADRO — ${rq0.chi ? rq0.chi + " " : ""}${rq0.testo}`);
+    if (g.scelta) out.push("SCELTE: " + g.scelta.map((t, i) => `${i === g.indiceScelta ? "▶ " : "  "}${t}`).join(" / ") + "   (su/giu, poi a)");
+    return out.join("\n");
+  }
+  out.push(`# ${m.nome} · ${m.fuori ? (g.fase === "sera" ? "è sera" : "è giorno") : "dentro"}${n ? ` · lo sfondo è sfocato (${n} su 5)` : ""} · ${cassa}`);
   // gli oggetti: ogni cella piena sa di quale oggetto è
   const ogg = new Map<string, string>();
   for (const t of timbriPresenti(m, ctx)) {
@@ -178,7 +202,7 @@ function schermoMondo(): string {
     righeMappa.push(r);
   }
   out.push(...righeMappa.map(r => "   " + r.split("").join(" ")));
-  out.push(`@ = tu, guardi ${st.dir === "giu" ? "giù" : st.dir === "su" ? "su" : `a ${st.dir}`} · . = si cammina · ` + [...legenda].map(([k, v]) => `${k} = ${v}`).join(" · "));
+  out.push(`@ = tu${g.mezzo ? ` (in ${g.mezzo})` : ""}, guardi ${st.dir === "giu" ? "giù" : st.dir === "su" ? "su" : `a ${st.dir}`} · . = si cammina · ` + [...legenda].map(([k, v]) => `${k} = ${v}`).join(" · "));
   if (cosePresenti(m, ctx).some(q => q.tipo === "luccichio" && q.x === st.x && q.y === st.y)) out.push("(sotto i tuoi piedi: un luccichio)");
   if (g.velo) out.push(`(schermo scuro) ${spazi(g.velo)}`);
   const rq = g.riquadro;
@@ -191,12 +215,16 @@ function schermoMondo(): string {
   return out.join("\n");
 }
 
-/** Lascia finire quello che il gioco sta facendo; il testo che si scrive a macchina si completa, come premendo A. */
+/** Lascia finire quello che il gioco sta facendo: i passaggi (porte, buio, l'introduzione che rimpicciolisce) finché
+    non compare qualcosa da leggere; il testo che si scrive a macchina si completa, come premendo A. */
 async function assesta(ms = 60) {
   await pausa(ms);
-  for (let i = 0; i < 20 && nelBorgo(); i++) {
+  for (let i = 0; i < 60 && nelBorgo(); i++) {
     const g = D().mondo;
-    if (g.riquadro && !g.pieno && !g.scelta) { g.premi("a"); await pausa(10); } else break;
+    const fermo = g.riquadro || g.scelta || g.menu || g.velo;
+    if (g.occupato && !fermo) { await pausa(50); continue; } // un passaggio: si aspetta
+    if (g.riquadro && !g.pieno && !g.scelta) { g.premi("a"); await pausa(10); continue; }
+    break;
   }
 }
 async function schermo(): Promise<string> {

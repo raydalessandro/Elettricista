@@ -45,6 +45,14 @@ async function cammina(page: Page, passi: string) {
   }
 }
 
+/** L'introduzione col dito: A sulla copertina e sui riquadri, la scelta toccata, poi A finché si è nel borgo. */
+async function introduzione(page: Page, chi: "Uomo" | "Donna") {
+  await expect(page.locator(".gb-velo")).toContainText("DIOTTRI", { timeout: 4000 });
+  await aFinche(page, m => !!m.scelta);
+  await page.locator(".gb-scelte").getByRole("option", { name: chi }).tap();
+  await aFinche(page, m => m.mappa === "borgo" && !m.occupato);
+}
+
 /** Un tocco sulla croce, dal lato giusto. */
 async function croce(page: Page, dir: "su" | "giu" | "sinistra" | "destra") {
   const b = (await page.locator(".gb-croce").boundingBox())!;
@@ -59,10 +67,8 @@ test("dalla home dei corsi si arriva al gioco, e si torna", async ({ page }) => 
   await expect(page.locator("a.course")).toHaveCount(2);
   await page.getByRole("link", { name: /Diottri/ }).tap();
   await page.waitForFunction(() => !!(window as any).__dio);
-  await expect(page.getByText("Chi sei?")).toBeVisible();
-  await page.getByRole("button", { name: "Uomo" }).tap();
+  await introduzione(page, "Uomo");
   await expect(page.locator(".gb-schermo")).toBeVisible();
-  await aFinche(page, m => !m.occupato); // durante un dialogo il menu non si apre
   await page.getByRole("button", { name: "Menu" }).tap();
   await page.getByRole("menuitem", { name: "Il percorso" }).tap();
   await expect(page.getByText("Il percorso si apre dopo la prima visita nella bottega di Iride.")).toBeVisible();
@@ -72,13 +78,12 @@ test("dalla home dei corsi si arriva al gioco, e si torna", async ({ page }) => 
 
 test("il borgo col dito: il prologo, Marco e il primo caso, il primo Diottro; chiudi e riapri", async ({ page }) => {
   const errors = await openDiottri(page);
-  await page.getByRole("button", { name: "Donna" }).tap();
 
-  // la console: lo schermo intero dentro il telefono, la croce, A e B
+  // la console: lo schermo intero dentro il telefono, la croce, A e B; l'introduzione, poi il borgo
   await expect(page.locator(".gb-schermo")).toBeVisible();
   await dentroLoSchermo(page, ".gb");
-  await expect(page.locator(".gb-testo")).toContainText("l'insegna è una macchia", { timeout: 4000 });
-  await aFinche(page, m => !m.occupato);
+  await introduzione(page, "Donna");
+  expect(await page.evaluate(() => (window as any).__dio.prog.chi)).toBe("donna");
 
   // la croce: un tocco, un passo
   const prima = await mondo(page);
@@ -155,6 +160,8 @@ test("il borgo col dito: il prologo, Marco e il primo caso, il primo Diottro; ch
   await page.getByRole("button", { name: "Consegna", exact: true }).tap();
   await expect(page.getByRole("heading", { name: "Ci vedo!" })).toBeVisible();
   await expect(page.locator(".overlay.fine .stella.on")).toHaveCount(3);
+  await expect(page.locator(".scontrino")).toContainText("A te il 20%");
+  await dentroLoSchermo(page, ".scontrino");
   await page.getByRole("button", { name: "Torna al borgo" }).tap();
   await expect(page.locator(".gb-testo")).toContainText("binario 4", { timeout: 4000 });
   await aFinche(page, m => m.testo.includes("edicola"));
@@ -190,6 +197,7 @@ test("il borgo col dito: il prologo, Marco e il primo caso, il primo Diottro; ch
   expect(Object.values(fatti.c1.stelle).filter(Boolean)).toHaveLength(3);
   expect(fatti.r1.preso).toBe(true);
   await page.getByRole("button", { name: "Menu" }).tap();
+  await expect(page.locator(".gb-cassa")).toContainText(/Cassa: \d+ €/);
   await page.getByRole("menuitem", { name: "Il percorso" }).tap();
   await expect(page.locator("[data-act=apri][data-arg=c1] .stella.on")).toHaveCount(3);
   await expect(page.locator("[data-act=apri][data-arg=r1]")).toContainText("Bombo");

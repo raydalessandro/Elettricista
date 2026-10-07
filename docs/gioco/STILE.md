@@ -44,6 +44,8 @@ La bottega di Iride è il cuore: facciata crema, tenda e insegna verde petrolio 
 - **Figura** (`figure.ts`): `{ pal, giu: [fermo, passo], su: [fermo, passo], lato: [fermo, passo] }`, 16 righe da 16 caratteri ("." trasparente, "1"–"3"). `lato` guarda a **sinistra**: a destra lo specchia il programma. Il fotogramma «passo» ha una gamba avanti e il corpo un pixel più giù o più su.
   - Di solito nella tavolozza di una figura 1 è la pelle, 2 la maglia, 3 i capelli e il contorno. **Luisa fa eccezione**: 1 sono i capelli bianchi, 2 la pelle, 3 il golfino viola e il contorno. Chi ritocca le sue righe deve tenerne conto.
 - **Luccichio**: tre fotogrammi 16×16 con la tavolozza `oro`.
+- **Mezzo** (`mezzi.ts`): come una figura, ma si disegna SOPRA chi gioca. Prima la figura, spostata in verticale di `alza` pixel (la bici −3: si sta più in alto), poi il mezzo; dove il mezzo è trasparente si vede chi gioca. Anteprima: `npx tsx scripts/diottri-anteprima.ts mezzi` (lui e lei, quattro direzioni, fermo e in movimento).
+- **Diottro in grande** (`creature.ts`): un oggetto 2×2 (32×32) con una tavolozza per cella, per l'introduzione. Sono lenti vive con gli occhi e i piedini, inventate: niente che ricordi creature di altri giochi. I colori sono quelli delle specie (Conca blu, Bombo arancione, Verdino verde chiaro, Polare grigio ardesia, Rullo viola, Bruno marrone, Cello avana). Anteprima: `... creature`.
 
 I disegni si scrivono come dati, a mano, riga per riga. Le funzioni che li generavano sono solo segnaposto.
 

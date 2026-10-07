@@ -14,11 +14,13 @@ import { abbagliamentoAttuale, bisogni, lenteAttuale, occhiale, opzioneDi, rifle
 import { ESITO, FAMIGLIA_NOME, type Momento, MOMENTI, MOMENTO_NOME, MOSTRA_NOME, type MostraId, type Motivo, MOTIVO_NOME, type Msg, POSTO_NOME, type PostoId, PROVA_NOME, type ProvaId, type RxCell, type SpecieId } from "./core/tipi";
 import type { CasoDef, CasoState, RicState, RiconoscimentoDef } from "./core/tipi";
 import * as D from "./draw";
-import { INIZIO } from "./content/borgo";
+import { INIZIO, INTRO } from "./content/borgo";
+import { ARTICOLI, segnoDi } from "./content/negozi";
+import { euro, vendita, voceDi } from "./core/vendita";
 import { creaGuscio, type Guscio } from "./mondo/guscio";
 import type { StatoMondo } from "./mondo/tipi";
 
-type Screen = "chi" | "mondo" | "home" | "caso" | "ric" | "vassoio";
+type Screen = "mondo" | "home" | "caso" | "ric" | "vassoio";
 interface Prog {
   v: 1;
   chi: "uomo" | "donna" | null;
@@ -31,6 +33,10 @@ interface Prog {
   mondo?: StatoMondo;
   /** i riconoscimenti in cui si è vista la risposta: lì «Occhio esperto» non vale più */
   aiutati?: string[];
+  /** la cassa: il 20% di ogni occhiale venduto, meno quello che si è comprato */
+  soldi?: number;
+  /** la vendita migliore per ogni cliente (la sua parte): rifare un caso paga solo se si vende meglio */
+  vendite?: Record<string, number>;
 }
 interface State {
   screen: Screen;
@@ -51,6 +57,8 @@ interface State {
   risolvi: (() => void) | null;
   /** il caso o il riconoscimento aperto è finito ed è già salvato */
   concluso: boolean;
+  /** quanto è entrato in cassa con questo caso, e quanto si era già incassato prima con lo stesso cliente */
+  incassato: { pagato: number; prima: number } | null;
 }
 
 export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = {}) {
@@ -78,11 +86,15 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") save(); });
   window.addEventListener("pagehide", save);
 
-  let S: State = { screen: prog.chi ? "mondo" : "chi", id: null, caso: null, ric: null, sheet: null, logDa: 0, ultima: null, intro: [], scelta: { id: null, g: null }, mostraVis: "", t0: 0, conferma: false, ritorno: "mondo", risolvi: null, concluso: false };
+  let S: State = { screen: "mondo", id: null, caso: null, ric: null, sheet: null, logDa: 0, ultima: null, intro: [], scelta: { id: null, g: null }, mostraVis: "", t0: 0, conferma: false, ritorno: "mondo", risolvi: null, concluso: false, incassato: null };
 
   /* ---------- il mondo ---------- */
-  if (!prog.mondo || !prog.mondo.mappa) prog.mondo = structuredClone(INIZIO);
+  // chi gioca la prima volta comincia dall'introduzione, dove sceglie chi è; poi il borgo
+  if (!prog.mondo || !prog.mondo.mappa) prog.mondo = structuredClone(prog.chi ? INIZIO : INTRO);
+  if (!prog.chi && prog.mondo?.mappa !== "intro") prog.mondo = structuredClone(INTRO);
   let guscio: Guscio | null = null;
+  /** la parte dell'ultimo occhiale venduto, finché il mondo non l'ha fatta vedere */
+  let ultimoIncasso = 0;
   const apriDalMondo = (id: string) => new Promise<void>(res => {
     S.ritorno = "mondo";
     S.risolvi = res;
@@ -100,9 +112,20 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
         ric: apriDalMondo,
         salva: () => { if (prog.mondo?.segni.includes("prologo")) prog.benvenuto = true; save(); },
         esci: v => { if (v === "vassoio") { S.ritorno = "mondo"; ACTS.vassoio(""); } else ACTS.percorso(""); render(); window.scrollTo(0, 0); },
+        soldi: () => prog.soldi ?? 0,
+        spendi: n => { if ((prog.soldi ?? 0) < n) return false; prog.soldi = (prog.soldi ?? 0) - n; save(); return true; },
+        incasso: () => { const n = ultimoIncasso; ultimoIncasso = 0; return n; },
+        scegli: chi => { prog.chi = chi; save(); },
       });
     }
     return guscio;
+  }
+
+  /** Il mondo si rifà da capo col suo stato nuovo (un altro prog.mondo). */
+  function rifaiMondo() {
+    guscio?.stacca();
+    guscio = null;
+    root.innerHTML = "";
   }
 
   /* ---------- il percorso ---------- */
@@ -135,7 +158,7 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
   /** Una riga sopra le scelte di un posto: le parole che servono per scegliere. */
   const NOTA_POSTO: Partial<Record<PostoId, string>> = {
     materiale: "1,5 · 1,6 · 1,67 · 1,74 è l'indice: più è alto, più la lente è sottile. Il policarbonato regge gli urti.",
-    montatura: "52□18: la larghezza della lente (il calibro) e il ponte, in millimetri.",
+    montatura: "Due numeri, in millimetri: la larghezza della lente (il calibro) e il ponte.",
     filtro: "La categoria va da 0 a 4: più è alta, più è scura. La 3 per mare e lago; la 4 per ghiacciaio e alta montagna, mai alla guida.",
     trattamento: "La lente corregge il difetto; il trattamento serve a come la usa: schermo, notte, foto.",
   };
@@ -148,13 +171,6 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
   }
 
   /* ---------- schermate ---------- */
-
-  function vChi() {
-    return `<main class="schermo inizio"><h1 class="logo">Diottri</h1><p class="sotto">Il mestiere dell'ottico, giocando.</p>` +
-      `<p class="dom">Chi sei?</p><div class="due">` +
-      (["uomo", "donna"] as const).map(c => `<button class="scelta-chi" data-act="chi" data-arg="${c}">${D.avatarSVG(D.ASPETTO_TU[c], 96)}<span>${c === "uomo" ? "Uomo" : "Donna"}</span></button>`).join("") +
-      `</div><p class="nota">Grafica provvisoria: qui si provano i due giri del gioco.</p></main>`;
-  }
 
   function vHome() {
     const tu = prog.chi ? D.avatarSVG(D.ASPETTO_TU[prog.chi], 44) : "";
@@ -267,7 +283,8 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
     if (sh.startsWith("posto:")) {
       const p = sh.slice(6) as PostoId;
       const cur = st.posti[p];
-      return sheet(POSTO_NOME[p], (NOTA_POSTO[p] ? `<p class="nota">${esc(NOTA_POSTO[p])}</p>` : "") + `<div class="lista">${K.opzioniDisponibili(def, st, p).map(o => `<button class="opz${o.id === cur ? " cur" : ""}" data-act="metti" data-arg="${p}|${o.id}" ${o.id === cur ? "disabled" : ""}><b>${esc(o.nome)}</b>${o.serve ? `<small>col Diottro ${esc(SPECIE[o.serve].nome)}</small>` : ""}${o.id === cur ? "<small>adesso</small>" : ""}</button>`).join("")}</div>`);
+      const prezzo = (o: Parameters<typeof voceDi>[2]) => { const v = voceDi(def, p, o); return v ? `${euro(v.prezzo)} di listino` : p === "montatura" ? "la sua: non si vende" : "compreso"; };
+      return sheet(POSTO_NOME[p], (NOTA_POSTO[p] ? `<p class="nota">${esc(NOTA_POSTO[p])}</p>` : "") + `<div class="lista">${K.opzioniDisponibili(def, st, p).map(o => `<button class="opz${o.id === cur ? " cur" : ""}" data-act="metti" data-arg="${p}|${o.id}" ${o.id === cur ? "disabled" : ""}><b>${esc(o.nome)}</b><small class="prezzo">${esc(prezzo(o))}</small>${o.serve ? `<small>col Diottro ${esc(SPECIE[o.serve].nome)}</small>` : ""}${o.id === cur ? "<small>adesso</small>" : ""}</button>`).join("")}</div>`);
     }
     if (sh === "mostra") {
       const d = K.dubbioAperto(def, st);
@@ -319,13 +336,26 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
 
   const dove = () => (S.ritorno === "mondo" ? "Torna al borgo" : "Torna al percorso");
 
+  /** Lo scontrino: le voci dal listino, il totale, e la parte di chi vende. Con un allarme non si vende. */
+  function scontrino(def: CasoDef, st: CasoState) {
+    if (st.fine === "medico") return `<p class="nota">Con un allarme non si vende: prima il medico.</p>`;
+    const v = vendita(def, st);
+    if (!v) return "";
+    const inc = S.incassato;
+    const parte = !inc || !inc.prima ? `A te il 20%: <b>${esc(euro(v.provvigione))}</b>`
+      : inc.pagato > 0 ? `A te il 20%: <b>${esc(euro(v.provvigione))}</b><small>Vendita migliore di prima: in cassa +${esc(euro(inc.pagato))}.</small>`
+      : `A te il 20%: <b>${esc(euro(v.provvigione))}</b><small>Con questo cliente avevi già incassato ${esc(euro(inc.prima))}: in cassa niente in più.</small>`;
+    return `<section class="scontrino" aria-label="La vendita"><h3>Venduto</h3><ul>${v.voci.map(x => `<li><span>${esc(x.nome)}${x.nota ? `<small>${esc(x.nota)}</small>` : ""}</span><b>${esc(euro(x.prezzo))}</b></li>`).join("")}</ul>` +
+      `<p class="totale"><span>Totale</span><b>${esc(euro(v.totale))}</b></p><p class="parte">${parte}</p></section>`;
+  }
+
   function fineCaso(def: CasoDef, st: CasoState) {
     if (!st.fine) return "";
     const fin = K.stelleFinali(st);
     const titolo = st.fine === "consegnato" ? "Ci vedo!" : st.fine === "medico" ? "Al medico" : st.fine === "chiuso" ? "Caso chiuso" : "Se n'è andato";
     const ok = K.riuscito(st);
     return `<div class="velo pieno"></div><section class="overlay fine" role="dialog" aria-label="${esc(titolo)}"><h2 class="logo">${esc(titolo)}</h2>` +
-      (ok ? stelle(fin, true) + perse(st) : `<p>${st.fine === "chiuso" ? "Non era un caso da medico: si rigioca." : "Con troppi errori il cliente se ne va: si rigioca."}</p>`) +
+      (ok ? stelle(fin, true) + perse(st) + scontrino(def, st) : `<p>${st.fine === "chiuso" ? "Non era un caso da medico: si rigioca." : "Con troppi errori il cliente se ne va: si rigioca."}</p>`) +
       riquadro(st.log, Math.max(0, st.log.length - 3), def) +
       `<button class="btn primaria" data-act="fineCaso">${ok ? dove() : "Torna e riprova"}</button></section>`;
   }
@@ -410,7 +440,12 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
       const nome = p.tipo === "caso" ? `Caso ${CASO[p.id].n} · ${CASO[p.id].titolo}` : `Riconosci · ${RIC[p.id].dove.replace(/\.$/, "")}`;
       return `<li>${esc(nome)}: ${Math.max(1, Math.round(r.ms / 60000))} min, ${r.volte} ${r.volte === 1 ? "volta" : "volte"}</li>`;
     }).join("");
+    if (!prog.mondo?.segni.includes("prologo")) {
+      return `<main class="schermo vassoio">${bar("Vassoio e Campionario")}<p class="nota centro">Il vassoio te lo dà la Maestra Iride, nella sua bottega.</p></main>`;
+    }
+    const mezzi = Object.values(ARTICOLI).filter(a => prog.mondo?.segni.includes(segnoDi(a.id))).map(a => a.nome);
     return `<main class="schermo vassoio">${bar("Vassoio e Campionario")}` +
+      `<section class="cassa"><h2>La cassa</h2><p><b>${esc(euro(prog.soldi ?? 0))}</b> · il 20% di ogni occhiale venduto.</p><p>${mezzi.length ? `I tuoi mezzi: ${esc(mezzi.join(", "))}.` : "Ancora nessun mezzo: bici e barche si comprano nei negozi del borgo."}</p></section>` +
       `<section><h2>Il tuo vassoio</h2>${prog.vassoio.map(scheda).join("")}</section>` +
       `<section><h2>Il Campionario</h2><div class="campionario">${tutte.map(sp => prog.vassoio.includes(sp) ? `<div class="cs">${D.diottroRitratto(sp, 56)}<small>${esc(SPECIE[sp].nome)}</small></div>` : `<div class="cs ignoto">${D.diottroDavanti("sconosciuto", 56)}<small>???</small></div>`).join("")}</div></section>` +
       (reg ? `<section><h2>Registro</h2><ul class="registro">${reg}</ul></section>` : "") +
@@ -421,7 +456,6 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
 
   function view() {
     switch (S.screen) {
-      case "chi": return vChi();
       case "mondo": return ilGuscio().html();
       case "home": return vHome();
       case "caso": return vCaso();
@@ -440,6 +474,15 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
         const prima = prog.fatti[st.id]?.stelle;
         const ora = K.stelleFinali(st);
         prog.fatti[st.id] = { stelle: nStelle(prima) > nStelle(ora) ? prima : ora };
+      }
+      const v = vendita(CASO[st.id], st);
+      if (v) {
+        const prima = prog.vendite?.[st.id] ?? 0;
+        const pagato = Math.max(0, v.provvigione - prima);
+        prog.vendite = { ...(prog.vendite ?? {}), [st.id]: Math.max(prima, v.provvigione) };
+        prog.soldi = (prog.soldi ?? 0) + pagato;
+        ultimoIncasso = pagato;
+        S.incassato = { pagato, prima };
       }
       save();
     } else if (S.screen === "ric" && S.ric?.fine) {
@@ -515,14 +558,20 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
   }
 
   const ACTS: Record<string, (a: string) => void> = {
-    chi: a => { prog.chi = a === "donna" ? "donna" : "uomo"; save(); S.screen = "mondo"; },
+    /** sceglie chi gioca e salta l'introduzione (per i test e le prove da riga di comando) */
+    chi: a => {
+      prog.chi = a === "donna" ? "donna" : "uomo";
+      if (prog.mondo?.mappa === "intro") { prog.mondo = structuredClone(INIZIO); rifaiMondo(); }
+      save();
+      S.screen = "mondo";
+    },
     home: () => { torna(); },
     mondo: () => { S.ritorno = "mondo"; S.risolvi = null; S.screen = "mondo"; },
     percorso: () => { S.ritorno = "mondo"; S.screen = "home"; },
     vassoio: () => { S.screen = "vassoio"; S.conferma = false; },
     apri: id => {
       if (S.screen === "home") S.ritorno = "home";
-      S.id = id; S.sheet = null; S.ultima = null; S.intro = []; S.mostraVis = ""; S.logDa = 0; S.t0 = Date.now(); S.concluso = false;
+      S.id = id; S.sheet = null; S.ultima = null; S.intro = []; S.mostraVis = ""; S.logDa = 0; S.t0 = Date.now(); S.concluso = false; S.incassato = null;
       S.scelta = { id: null, g: null };
       if (CASO[id]) { S.caso = K.nuovoCaso(CASO[id], semeNuovo(), prog.vassoio); S.ric = null; S.screen = "caso"; }
       else { S.ric = R.nuovoRic(RIC[id], semeNuovo()); S.caso = null; S.screen = "ric"; }
@@ -578,13 +627,11 @@ export function mountDiottri(app: HTMLElement | null, opts: { home?: string } = 
     fineRic: () => { concludi(); ACTS.home(""); },
     reset: () => { S.conferma = true; },
     resetNo: () => { S.conferma = false; },
+    // da capo davvero: l'introduzione, la scelta di chi sei, il borgo
     resetSi: () => {
-      const chi = prog.chi;
       prog = fresh();
-      prog.chi = chi;
-      prog.mondo = structuredClone(INIZIO);
-      guscio?.stacca();
-      guscio = null; // il mondo riparte da capo, col suo stato nuovo
+      prog.mondo = structuredClone(INTRO);
+      rifaiMondo();
       save();
       S.conferma = false;
       S.ritorno = "mondo";

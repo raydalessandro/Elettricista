@@ -3,6 +3,7 @@
    Il Borgo Diottria ha due luci: il giorno e la sera (gli stessi nomi, altri colori). Gli interni non cambiano.
    I personaggi hanno tre colori più il trasparente: 1 la pelle (o la parte chiara), 2 i vestiti, 3 i capelli e il contorno. */
 import type { Tavolozza } from "./formato";
+import { PAL_NUOVE } from "./figure_nuove";
 
 export type Luce = "giorno" | "sera" | "interno";
 
@@ -85,6 +86,7 @@ export const FIGURE_PAL: Record<string, Tavolozza> = {
   luisa: ["#000000", "#f4f0f8", "#f0c4a4", "#583878"],
   passante: ["#000000", "#e8b896", "#e07c28", "#3a2a20"],
   oro: GIORNO.oro,
+  ...PAL_NUOVE,
 };
 
 export const TAVOLOZZE: Record<Luce, Record<string, Tavolozza>> = { giorno: GIORNO, sera: SERA, interno: INTERNO };

@@ -8,6 +8,9 @@ import { pick, quarti, rng } from "../../src/diottri/core/rng";
 import type { CasoDef, CasoState, Msg, PostoId, ProvaId, RicState, RiconoscimentoDef } from "../../src/diottri/core/tipi";
 import { bisogni, totaleTacche } from "../../src/diottri/core/valuta";
 import { ELENCO_NERO, nelNero, righe, stanno, validateDiottri } from "../../src/diottri/standard/validate";
+import { ARTICOLI, NEGOZI } from "../../src/diottri/content/negozi";
+import { provvigioneMinima } from "../../src/diottri/core/economia";
+import { euro, vendita } from "../../src/diottri/core/vendita";
 
 const caso = (id: string) => CASI.find(c => c.id === id)!;
 const ric = (id: string) => RICONOSCIMENTI.find(r => r.id === id)!;
@@ -517,5 +520,74 @@ describe("Diottri · l'elenco nero", () => {
   it("i messaggi del motore e i testi dei contenuti non ci cadono", () => {
     for (const c of CASI) for (const m of [...risolviCaso(c, 1, vassoioPrima(c.id)).log, ...giocaMale(c, 1).log]) expect(nelNero(m.t), m.t).toBeNull();
     for (const s of Object.values(SPECIE)) for (const t of [s.nome, s.uso, s.forma, s.limite, s.prove]) expect(nelNero(t), t).toBeNull();
+  });
+});
+
+describe("Diottri · la vendita e i negozi", () => {
+  const caso = (id: string) => CASI.find(c => c.id === id)!;
+
+  it("un caso consegnato è un occhiale venduto: le voci dal listino, e il 20% a chi vende", () => {
+    const c3 = caso("c3"), st = risolviCaso(c3, 1, vassoioPrima("c3"));
+    const v = vendita(c3, st)!;
+    expect(v.voci.map(x => x.nome)).toEqual(expect.arrayContaining(["Antiriflesso", "Montatura nuova"]));
+    expect(v.totale).toBe(v.voci.reduce((s, x) => s + x.prezzo, 0));
+    expect(v.provvigione).toBe(Math.round(v.totale * 0.2));
+  });
+
+  it("la montatura del cliente non si vende; quella nuova sì", () => {
+    const c1 = caso("c1"), st = risolviCaso(c1, 1, vassoioPrima("c1"));
+    expect(vendita(c1, st)!.voci.some(x => /Montatura/.test(x.nome))).toBe(false);
+    const c2 = caso("c2"), st2 = risolviCaso(c2, 1, vassoioPrima("c2"));
+    expect(vendita(c2, st2)!.voci.some(x => x.nome === "Montatura nuova")).toBe(true);
+  });
+
+  it("con un allarme non si vende, e nemmeno quando il caso non è consegnato", () => {
+    const c5 = caso("c5"), st = risolviCaso(c5, 1, vassoioPrima("c5"));
+    expect(st.fine).toBe("medico");
+    expect(vendita(c5, st)).toBeNull();
+    const c1 = caso("c1"), male = K.nuovoCaso(c1, 1, vassoioPrima("c1"));
+    K.medico(c1, male, "oggi");
+    expect(vendita(c1, male)).toBeNull();
+  });
+
+  it("un pezzo che non serviva il cliente lo paga come il pezzo giusto: vendere di più non rende", () => {
+    const c1 = caso("c1"), st = risolviCaso(c1, 1, vassoioPrima("c1"));
+    const giusto = vendita(c1, { ...st, posti: { ...st.posti, materiale: "cr39" } })!;
+    const troppo = vendita(c1, { ...st, posti: { ...st.posti, materiale: "i167" } })!;
+    expect(troppo.provvigione).toBe(giusto.provvigione);
+    const lenti = troppo.voci.find(v => /1,67/.test(v.nome))!;
+    expect(lenti.prezzo).toBe(giusto.voci.find(v => /1,5/.test(v.nome))!.prezzo);
+    expect(lenti.nota).toContain("Organico 1,5");
+    // un pezzo giusto più caro (l'1,74 per Davide) si paga per quello che è
+    const c3 = caso("c3"), st3 = risolviCaso(c3, 1, vassoioPrima("c3"));
+    expect(vendita(c3, { ...st3, posti: { ...st3.posti, materiale: "i174" } })!.totale).toBeGreaterThan(vendita(c3, { ...st3, posti: { ...st3.posti, materiale: "i167" } })!.totale);
+  });
+
+  it("vendere bene rende: chi scopre che Giulia sta al computer vende anche il filtro", () => {
+    const c2 = caso("c2"), st = risolviCaso(c2, 1, vassoioPrima("c2"));
+    const conFiltro = vendita(c2, { ...st, posti: { ...st.posti, trattamento: "blu" } })!;
+    const senza = vendita(c2, { ...st, posti: { ...st.posti, trattamento: "no" } })!;
+    expect(conFiltro.provvigione).toBeGreaterThan(senza.provvigione);
+    expect(provvigioneMinima(c2, 1, vassoioPrima("c2"))).toBe(conFiltro.provvigione); // con l'uso scoperto, «Solo antigraffio» non è più «Bene»
+  });
+
+  it("ogni mondo vende mezzi migliori e più cari; i negozi vendono solo articoli che esistono", () => {
+    const perMondo = Object.values(ARTICOLI).reduce<Record<number, number[]>>((a, x) => ({ ...a, [x.mondo]: [...(a[x.mondo] ?? []), x.prezzo] }), {});
+    const mondi = Object.keys(perMondo).map(Number).sort((a, b) => a - b);
+    for (let i = 1; i < mondi.length; i++) expect(Math.max(...perMondo[mondi[i]]), `mondo ${mondi[i]}`).toBeGreaterThan(Math.max(...perMondo[mondi[i - 1]]));
+    for (const n of Object.values(NEGOZI)) for (const a of n.articoli) expect(ARTICOLI[a], a).toBeDefined();
+    for (const a of Object.values(ARTICOLI)) expect(stanno(a.dopo), a.dopo).toBe(true);
+    expect(euro(1250)).toBe("1.250 €");
+  });
+
+  it("G10: se la canoa costasse troppo, il controllo lo dice", () => {
+    const prima = ARTICOLI.canoa.prezzo;
+    ARTICOLI.canoa.prezzo = 999;
+    try {
+      expect(validateDiottri().filter(f => f.code === "G10").map(f => f.msg).join(" ")).toContain("Canoa");
+    } finally {
+      ARTICOLI.canoa.prezzo = prima;
+    }
+    expect(validateDiottri().filter(f => f.code === "G10")).toEqual([]);
   });
 });

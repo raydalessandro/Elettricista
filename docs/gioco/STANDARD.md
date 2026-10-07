@@ -58,6 +58,7 @@ Ogni testo che compare in un riquadro sta in **tre righe da 24 caratteri**, anda
 | G7 | Il segno meno è «−» |
 | G8 | Elenco nero: nessun nome e nessuna formula del mondo Pokémon (`ELENCO_NERO` in `standard/validate.ts`) |
 | G9 | Il riconoscimento è ben fatto: la specie giusta tra le risposte, almeno una prova utile, valori nell'intervallo, e il risolutore lo riconosce in ogni seme |
+| G10 | I mezzi che servono per andare avanti (la canoa per l'isolotto) si pagano con le vendite fatte prima, giocando bene: si gioca il percorso in fila con le scelte «Bene» più economiche, e la cassa deve bastare quando un passo non si raggiunge a piedi |
 
 ## Come esce una mandata
 

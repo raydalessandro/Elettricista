@@ -31,7 +31,15 @@ export type Comando =
   | { gira: Dir }
   | { buio: string }
   /** il cartoncino di fine mondo: il titolo, il testo, e sotto l'aggancio al mondo dopo */
-  | { fine: string; titolo: string; sotto?: string };
+  | { fine: string; titolo: string; sotto?: string }
+  /** un negozio: la lista degli articoli coi prezzi (content/negozi.ts) */
+  | { negozio: string }
+  /** l'introduzione: cosa c'è sullo schermo (Iride, i Diottri, la scelta…), e quanto si guarda prima di andare avanti */
+  | { quadro: string; ms?: number }
+  /** la copertina del gioco: il titolo grande, aspetta il tasto A */
+  | { copertina: string; sotto?: string }
+  /** chi gioca: uomo o donna */
+  | { protagonista: "uomo" | "donna" };
 
 export type Evento = Comando[];
 
@@ -81,14 +89,17 @@ export interface Porta {
   x: number;
   y: number;
   verso: { mappa: string; x: number; y: number; dir: Dir };
-  /** se la condizione non vale, la porta è chiusa e dice `chiusa` */
+  /** se la condizione non vale, la porta è chiusa e dice `chiusa` (o la prima battuta di `perche` che vale) */
   se?: Condizione;
   chiusa?: string;
+  perche?: Battuta[];
 }
 
 export interface Voce {
   tile: string;
   solido?: boolean;
+  /** un segno che la rende percorribile anche se è solida: «ha:canoa» per l'acqua */
+  serve?: string;
 }
 
 export interface MappaDef {
@@ -115,6 +126,11 @@ export interface StatoMondo {
   y: number;
   dir: Dir;
   segni: string[];
+  /** il caso o il riconoscimento aperto dal mondo e non ancora chiuso dal suo evento: se si chiude il gioco sul
+      risultato, riaprendo partono le battute che mancavano (il «ci vedo», il Diottro tornato, il finale) */
+  sospeso?: string;
+  /** in bici, anche dopo aver chiuso e riaperto */
+  mezzo?: "bici";
 }
 
 export interface Contesto {
