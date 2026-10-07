@@ -69,12 +69,13 @@ export const CARDS_CAP1: Record<string, Card> = {
       "dolore all'occhio, o occhio rosso;",
       "occhio rosso o dolente con le lenti a contatto;",
       "lampi di luce, «mosche» nuove, una tenda nella vista;",
-      "vista calata all'improvviso, o vista doppia improvvisa;",
       "righe storte o una macchia al centro, comparse da poco;",
-      "mal di testa forte con la vista annebbiata, o aloni colorati intorno alle luci;",
       "un colpo all'occhio.",
     ],
-    after: ["Un prodotto chimico nell'occhio: subito acqua corrente, per almeno un quarto d'ora; intanto qualcuno chiama il 112."],
+    after: [
+      "**Medico subito**, cioè il pronto soccorso adesso o il 112: vista calata all'improvviso, o vista doppia improvvisa; mal di testa forte con la vista annebbiata, o aloni colorati intorno alle luci; una ferita all'occhio.",
+      "Un prodotto chimico nell'occhio: subito acqua corrente, per almeno un quarto d'ora; intanto qualcuno chiama il 112.",
+    ],
     g: [["anamnesi", "le domande prima del controllo"], ["oculista", "il medico degli occhi"], ["visita oculistica", "il controllo della salute dell'occhio, dal medico"], ["controllo della vista", "la misura del difetto: non è una visita medica"]],
     tutor: "Dolore o occhio rosso: non si misura e non si consiglia niente, si manda dal medico, oggi. È la regola che non ha eccezioni.",
     teaches: ["anamnesi", "medico", "onesta", "visita"],
@@ -219,7 +220,7 @@ export const CARDS_CAP1: Record<string, Card> = {
   sabato: {
     t: "Cose da sapere al banco",
     ol: [
-      "**Medico oggi stesso**, prima di qualunque controllo: dolore o occhio rosso; occhio rosso o dolente con le lenti a contatto (le toglie, non le rimette, le porta al medico con l'astuccio); lampi, «mosche» nuove, una tenda; vista calata all'improvviso o doppia; mal di testa forte con vista annebbiata; righe storte o una macchia al centro; un colpo all'occhio.",
+      "**Medico oggi stesso**, prima di qualunque controllo: dolore o occhio rosso; occhio rosso o dolente con le lenti a contatto (le toglie, non le rimette, le porta al medico con l'astuccio); lampi, «mosche» nuove, una tenda; righe storte o una macchia al centro; un colpo all'occhio. **Subito**, al pronto soccorso: vista calata o doppia all'improvviso; mal di testa forte con vista annebbiata.",
       "**Bambini**: il primo passo è la visita dall'oculista, perché a volte servono gocce che rilassano il cristallino per misurare bene. Poi montature flessibili e lenti che resistono agli urti, come il **policarbonato**. Mai lenti di vetro. Per i bambini miopi ci sono lenti che rallentano il peggioramento, non lo fermano: se sono adatte, lo decide l'oculista.",
       "**Lenti a contatto**: si applicano con una prova vera e i controlli che servono, meglio dopo una visita dall'oculista. Mai «da provare» a casa.",
     ],
@@ -829,7 +830,7 @@ export const CAP1: Level[] = [
       },
     ],
     quiz: [
-      { q: "Un cliente arriva con l'occhio rosso e dolore. Prima cosa?", o: ["Medico oggi stesso", "Controllo della vista", "Un collirio"], ok: 0, why: "Dolore e occhio rosso sono un caso per il medico, subito." },
+      { q: "Un cliente arriva con l'occhio rosso e dolore. Prima cosa?", o: ["Medico oggi stesso", "Controllo della vista", "Un collirio"], ok: 0, why: "Dolore e occhio rosso sono un caso per il medico, oggi stesso, prima di qualunque controllo." },
       { q: "Per un bambino che strizza gli occhi, il primo passo è…", o: ["La visita dall'oculista", "Un paio di occhiali da lettura", "Le lenti a contatto"], ok: 0, why: "Nei bambini si parte dalla visita oculistica: a volte servono gocce per misurare bene." },
       { q: "Un cliente con le progressive nuove inciampa sulle scale. Cosa gli spieghi?", o: ["Abbassare la testa e guardare dalla parte alta", "Guardare dalla parte bassa", "Toglierle sempre per camminare"], ok: 0, why: "La parte bassa è per vicino: sulle scale si guarda dalla parte alta." },
       { q: "Le lenti a contatto si danno…", o: ["Dopo una prova vera e i controlli, meglio dopo una visita", "Da provare a casa, per qualche giorno", "A chi le chiede, senza altro"], ok: 0, why: "Si applicano con una prova vera e i controlli che servono, meglio dopo una visita dall'oculista." },

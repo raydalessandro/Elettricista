@@ -7,18 +7,34 @@ export interface ProntRow {
 
 export const PRONTUARIO: ProntRow[] = [
   {
+    t: "Prima il medico, subito",
+    note: "Il pronto soccorso adesso, o il 112. Prima di qualunque controllo della vista; niente colliri o farmaci consigliati.",
+    rows: [
+      ["Vista calata all'improvviso", "o vista doppia improvvisa"],
+      ["Mal di testa forte", "con la vista annebbiata, o aloni colorati intorno alle luci"],
+      ["Un prodotto chimico nell'occhio", "subito acqua corrente, per almeno un quarto d'ora; intanto qualcuno chiama il 112"],
+      ["Una ferita, un oggetto nell'occhio", "non toccare, non lavare, non premere; coprire senza schiacciare"],
+    ],
+  },
+  {
     t: "Prima il medico, oggi stesso",
     note: "L'oculista, o il pronto soccorso: quello oculistico, dove c'è. Prima di qualunque controllo della vista; niente colliri o farmaci consigliati.",
     rows: [
       ["Dolore", "all'occhio, o occhio rosso"],
       ["Lenti a contatto", "occhio rosso o dolente: le toglie, non le rimette, le porta al medico con l'astuccio"],
       ["Lampi, «mosche», una tenda", "comparsi da poco"],
-      ["Vista calata all'improvviso", "o vista doppia improvvisa"],
       ["Righe storte, una macchia al centro", "comparse da poco: non è astigmatismo"],
-      ["Mal di testa forte", "con la vista annebbiata, o aloni colorati intorno alle luci"],
       ["Un colpo all'occhio", "anche se sembra niente"],
-      ["Un prodotto chimico nell'occhio", "subito acqua corrente, per almeno un quarto d'ora; intanto qualcuno chiama il 112"],
+    ],
+  },
+  {
+    t: "La visita, senza urgenza",
+    note: "Un buon consiglio, non un allarme.",
+    rows: [
       ["Bambini", "prima la visita dall'oculista, poi gli occhiali"],
+      ["Decimi che non arrivano", "con la lente giusta il cliente non vede come dovrebbe"],
+      ["Gradazione che cambia in fretta", "o un abbagliamento di notte nuovo"],
+      ["Dopo i 40 anni", "se non fa una visita da anni"],
     ],
   },
   {

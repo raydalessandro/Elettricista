@@ -1,6 +1,6 @@
 # Diottri · progetto del gioco
 
-Versione 0.4 · 7 ottobre 2026 · da approvare
+Versione 0.5 · 7 ottobre 2026 · approvato da Ray; mandata 2 in corso
 
 Un gioco di ruolo con le creature, in stile Game Boy Color, dove tutto è ottica. Sta accanto al corso «Sfera Cilindro Asse»: il corso è il prontuario da tasca, il gioco è la ripetizione che si fa per divertimento, la sera, anche per un'ora di fila. Si finisce in circa otto ore, e dopo la fine la bottega resta aperta.
 
@@ -355,22 +355,14 @@ Il gioco deve essere bello: è anche così che si impara.
 
 Ogni mandata finisce come un capitolo del corso: controllo automatico, revisione di un esperto di ottica, test sul telefono, push su `main`. Ogni mondo esce come una puntata: chiude con un aggancio, e alla ripresa c'è il riassunto.
 
-## Da decidere
+## Decisioni di Ray (7 ottobre 2026)
 
-1. **Nomi**: Diottri, Borgo Diottria, Iride, Lesto, il Pressappoco, i maestri, le creature (Conca, Bombo, Rullo…). Sono proposte.
-2. **Protagonista**: un adulto che viene dalla vendita, come chi gioca. Uomo o donna, a scelta?
-3. **Tono**: ironico e leggero nel primo atto, più serio nel secondo e nel terzo. Va bene?
-4. **Il confine di legge.** In Italia, alla lettera, l'ottico senza ricetta medica fa solo occhiali per miopia e presbiopia semplici (R.D. 1334/1928, art. 12). La Cassazione (sentenza 27853/2001 e successive) riconosce all'optometrista la misura della vista, senza diagnosi né cure. Nel gioco, dal mondo 1 si misurano la sfera, anche dell'ipermetropia, e l'asse col cilindro già dato; il cilindro intero si misura dal mondo 9.
-   - Va bene così, perché chi gioca imparerà a fare tutto?
-   - Oppure il gioco deve chiedere la ricetta per ipermetropia e astigmatismo?
-
-   La risposta cambia quali mosse sono *Bene*, e va decisa prima della mandata 2.
-5. **La prova della mandata 2.** La persona per cui è fatto può giocarla 20–30 minuti mentre qualcuno guarda?
-6. **Il prontuario del corso.** Le revisioni hanno trovato due cose da allineare anche nel corso già uscito:
-   - separare l'allarme «oggi» da quello «subito»: vista calata o doppia all'improvviso, mal di testa forte con aloni colorati, prodotto chimico, ferita;
-   - togliere i bambini dalla tabella «oggi stesso»: per loro serve la visita, non l'urgenza.
-
-   Si correggono?
+1. **Nomi**: liberi; Ray li corregge dopo, se serve.
+2. **Protagonista**: all'inizio si sceglie uomo o donna. Conta poco, ma dà la sensazione del gioco.
+3. **Tono**: leggero nel primo atto, più serio nel secondo e nel terzo.
+4. **Il confine di legge**: secondo Ray, in un negozio dove si fanno occhiali la legge chiede che nella società ci sia un ottico abilitato, che firma le dichiarazioni di conformità. Il resto del lavoro, vendita compresa, lo fanno tutti. Il gioco resta com'è: dal mondo 1 si misurano la sfera e l'asse, il cilindro intero dal mondo 9. Nel mondo 6 la consegna comprende la dichiarazione di conformità firmata.
+5. **La prova della mandata 2** la fa Ray, giocando.
+6. **Il prontuario del corso** è corretto: allarme «subito» separato da «oggi stesso», e i bambini in una tabella della visita senza urgenza.
 
 ## Appendice A · La matrice: da dove si parte
 
@@ -516,6 +508,7 @@ Vanno in `docs/gioco/STANDARD.md`, `docs/gioco/STILE.md` e `docs/gioco/TECNICA.m
 
 ## Storia del documento
 
+- **0.5 · 7 ottobre 2026.** Approvato da Ray, con le sue decisioni: nomi liberi, scelta uomo o donna, tono, confine di legge, prova fatta da lui, prontuario del corso corretto.
 - **0.4 · 7 ottobre 2026.** Terza verifica dei due revisori: via le ultime contraddizioni.
   - Il bambino senza ricetta non si misura; la vista doppia ha tre strade; col prodotto chimico l'acqua corrente non è mai un errore; con le lenti a contatto niente acqua, nemmeno con gli occhialini.
   - Le stelle sono le tre del corso, una per momento. Prima della soluzione mostrata il cliente non se ne va e il Diottro non scappa.
